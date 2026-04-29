@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIQUI CUSSÓ — Film Editor & Postproducer</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✂</text></svg>">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --fg: #c8c8c8;
+      --fg-dim: #5a5a5a;
+      --fg-bright: #e8e8e8;
+      --accent: #b8213a;
+      --border: #1c1c1c;
+      --card-bg: #111;
+      --font: 'Avenir Next', 'Avenir', -apple-system, 'Helvetica Neue', sans-serif;
+      --nav-height: 82px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--nav-height);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 44px 0;
+      z-index: 101;
+      max-width: 2000px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .nav-outer {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--nav-height);
+      background: var(--bg);
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.3s;
+      z-index: 100;
+    }
+    .nav-outer.scrolled { border-color: var(--border); }
+    .nav-brand { cursor: pointer; }
+    .nav-brand h1 {
+      font-size: 28.5px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      color: var(--fg-bright);
+      text-transform: uppercase;
+      line-height: 1.1;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .nav-brand p {
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.24em;
+      color: var(--fg-dim);
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+    /* AKA desktop: inline next to name */
+    .nav-aka-desktop {
+      font-size: 9px;
+      font-weight: 400;
+      letter-spacing: 0.18em;
+      color: var(--fg-dim);
+      text-transform: uppercase;
+      display: none;
+    }
+    /* AKA mobile: below subtitle, hidden by default, only shown on mobile */
+    .nav-aka-mobile {
+      display: none;
+      font-size: 9px;
+      font-weight: 400;
+      letter-spacing: 0.2em;
+      color: var(--fg-dim);
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    @media (min-width: 701px) {
+      .nav-aka-mobile { display: none !important; }
+    }
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--fg-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+      cursor: pointer;
+    }
+    .nav-links a:hover,
+    .nav-links a.active { color: var(--accent); }
+
+    /* Hamburger button — hidden on desktop */
+    .nav-hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 4px;
+    }
+    .nav-hamburger span {
+      display: block;
+      width: 22px;
+      height: 1.5px;
+      background: var(--fg-dim);
+      transition: background 0.2s;
+    }
+    .nav-hamburger:hover span { background: var(--fg-bright); }
+
+    /* Mobile menu overlay */
+    .nav-mobile {
+      display: none;
+      position: fixed;
+      top: var(--nav-height);
+      left: 0; right: 0;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 24px 44px;
+      flex-direction: column;
+      gap: 24px;
+      z-index: 99;
+    }
+    .nav-mobile.open { display: flex; }
+    .nav-mobile a {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--fg-dim);
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .nav-mobile a:hover,
+    .nav-mobile a.active { color: var(--accent); }
+
+    @media (max-width: 700px) {
+      .nav-aka-desktop { display: none !important; }
+      nav { padding: 0 20px; }
+      .nav-links { display: none; }
+      .nav-hamburger { display: flex; }
+      .section { padding: 32px 12px 60px; }
+      .nav-brand h1 { font-size: 18px; }
+      .nav-brand p { font-size: 9px; }
+      .grid { gap: 6px; }
+      footer { padding: 24px 20px; }
+
+      /* Project view: full width video, meta below */
+      .project-view { padding: 0 0 60px; }
+      .project-back { display: block; margin: 0; max-width: 100%; padding: 20px 12px 16px; }
+      .project-layout {
+        display: flex !important;
+        flex-direction: column;
+        max-width: 100%;
+        padding: 0;
+        gap: 0;
+      }
+      .video-col { width: 100%; order: 1; }
+      .video-col .video-wrapper {
+        border-radius: 0;
+        width: 100vw;
+        margin-left: calc(-1 * (100vw - 100%) / 2);
+        position: relative;
+        padding-bottom: 56.25vw;
+        height: 0;
+      }
+      .project-meta { padding: 16px 12px 0; order: 2; }
+      .project-meta h2 { font-size: 13px; margin-bottom: 16px; }
+      .project-nav { margin: 12px 12px 0; padding-top: 12px; }
+
+      /* Related grid: 3 cols, tight padding */
+      .related-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+        margin-top: 16px;
+        padding: 0 4px;
+        max-width: 100%;
+      }
+    }
+
+    /* ── MAIN ── */
+    main { flex: 1; margin-top: var(--nav-height); }
+    .section {
+      display: none;
+      padding: 44px 44px 80px;
+      animation: fadeIn 0.35s ease;
+    }
+    .section.active { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── GRID 4 cols ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      max-width: 1350px;
+      margin: 0 auto;
+    }
+    @media (min-width: 2100px) {
+      .grid {
+        grid-template-columns: repeat(4, 450px);
+        max-width: none;
+        justify-content: center;
+      }
+    }
+    @media (max-width: 800px) {
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    .card {
+      position: relative;
+      aspect-ratio: 16/9;
+      overflow: hidden;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #141414;
+    }
+    .card img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.5s ease, filter 0.35s ease;
+      filter: brightness(0.85);
+    }
+    .card:hover img {
+      transform: scale(1.05);
+      filter: brightness(0.45);
+    }
+    .card-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: flex-end;
+      padding: 13px 15px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, transparent 65%);
+    }
+    .card:hover .card-overlay { opacity: 1; }
+    .card-title {
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #fff;
+      line-height: 1.3;
+    }
+
+    /* ── PROJECT VIEW ── */
+    .project-view {
+      display: none;
+      padding: 44px 44px 80px;
+      animation: fadeIn 0.35s ease;
+    }
+    .project-view.active { display: block; }
+    .project-back {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--fg-dim);
+      cursor: pointer;
+      transition: color 0.2s;
+      display: block;
+      margin-bottom: 36px;
+      max-width: 1350px;
+      margin-left: auto;
+      margin-right: auto;
+      /* align with video: offset by meta column */
+      padding-left: calc(175px + 44px);
+    }
+    .project-back:hover { color: var(--fg-bright); }
+    .project-back::before { content: '← '; }
+    .project-layout {
+      display: grid;
+      grid-template-columns: 175px 1fr;
+      gap: 44px;
+      align-items: start;
+      max-width: 1350px;
+      margin: 0 auto;
+    }
+    .project-meta h2 {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--fg-bright);
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      line-height: 1.3;
+    }
+    .meta-item { margin-bottom: 14px; }
+    .meta-label {
+      font-size: 8.5px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--fg-dim);
+    }
+    .meta-value {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--fg);
+      letter-spacing: 0.04em;
+      margin-top: 2px;
+    }
+    .video-wrapper {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      background: #000;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .video-wrapper iframe {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: none;
+    }
+    .project-nav {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+    }
+    .project-nav-btn {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--fg-dim);
+      cursor: pointer;
+      transition: color 0.2s;
+      background: none;
+      border: none;
+      font-family: var(--font);
+    }
+    .project-nav-btn:hover { color: var(--fg-bright); }
+    .project-nav-btn.prev::before { content: '← '; }
+    .project-nav-btn.next::after  { content: ' →'; }
+    .project-nav-btn:disabled { opacity: 0.18; cursor: default; }
+
+    /* Related grid */
+    .related-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 44px;
+      max-width: 1350px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .related-grid .card { opacity: 0.55; transition: opacity 0.3s; }
+    .related-grid .card:hover { opacity: 1; }
+    .related-grid .card.active-card { opacity: 1; box-shadow: 0 0 0 1px var(--accent); }
+
+    /* ── CONTACT ── */
+    .contact-wrap { max-width: 480px; }
+    .contact-wrap h2 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--fg-bright);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .contact-wrap > p {
+      font-size: 11px;
+      color: var(--fg-dim);
+      letter-spacing: 0.07em;
+      margin-bottom: 36px;
+    }
+    .form-group { margin-bottom: 22px; }
+    .form-group label {
+      display: block;
+      font-size: 8.5px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--fg-dim);
+      margin-bottom: 8px;
+    }
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      color: var(--fg-bright);
+      font-family: var(--font);
+      font-size: 13px;
+      padding: 10px 0;
+      outline: none;
+      transition: border-color 0.25s;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus { border-color: #444; }
+    .form-group textarea { resize: vertical; min-height: 110px; }
+    .btn-submit {
+      background: none;
+      border: 1px solid #333;
+      color: var(--fg);
+      font-family: var(--font);
+      font-size: 9.5px;
+      font-weight: 600;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      padding: 13px 38px;
+      cursor: pointer;
+      transition: border-color 0.25s, color 0.25s, background 0.25s;
+    }
+    .btn-submit:hover {
+      border-color: var(--fg-bright);
+      color: var(--fg-bright);
+      background: rgba(255,255,255,0.03);
+    }
+    .form-success {
+      display: none;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--fg-dim);
+      margin-top: 20px;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 36px 44px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .footer-social { display: flex; gap: 20px; }
+    .footer-social a {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--fg-dim);
+      color: var(--fg-dim);
+      text-decoration: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .footer-social a:hover {
+      border-color: var(--fg-bright);
+      color: var(--fg-bright);
+    }
+    .footer-social svg { width: 16px; height: 16px; fill: currentColor; }
+    .footer-copy {
+      font-size: 9.5px;
+      letter-spacing: 0.14em;
+      color: var(--fg-dim);
+      text-transform: uppercase;
+    }
+    .footer-social a:hover { color: var(--fg-bright); }
+  </style>
+</head>
+<body>
+
+<div class="nav-outer" id="navOuter">
+<nav id="mainNav">
+  <div class="nav-brand" onclick="showSection('editing')">
+    <h1>Miqui Cussó <span class="nav-aka-desktop" id="nav-aka-desktop">AKA FURIOSA STUDIO</span></h1>
+    <p>Film editor &amp; postproducer</p>
+    <p class="nav-aka-mobile" id="nav-aka-mobile">AKA FURIOSA STUDIO</p>
+  </div>
+  <ul class="nav-links">
+    <li><a id="nav-editing" onclick="showSection('editing')">Editing</a></li>
+    <li><a id="nav-post"    onclick="showSection('post')">Post</a></li>
+    <li><a id="nav-contact" onclick="showSection('contact')">Contact</a></li>
+  </ul>
+  <button class="nav-hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+</div>
+
+<!-- Mobile menu -->
+<div class="nav-mobile" id="navMobile">
+  <a id="mob-editing" onclick="showSection('editing'); toggleMenu()">Editing</a>
+  <a id="mob-post"    onclick="showSection('post');    toggleMenu()">Post</a>
+  <a id="mob-contact" onclick="showSection('contact'); toggleMenu()">Contact</a>
+</div>
+
+<main>
+  <section id="section-editing" class="section active">
+    <div class="grid" id="grid-editing"></div>
+  </section>
+
+  <section id="section-post" class="section">
+    <div class="grid" id="grid-post"></div>
+  </section>
+
+  <section id="section-contact" class="section">
+    <div class="contact-wrap">
+      <h2>Contact</h2>
+      <p>Let's work together.</p>
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="f-name">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="f-email">
+      </div>
+      <div class="form-group">
+        <label>Message</label>
+        <textarea id="f-msg"></textarea>
+      </div>
+      <button class="btn-submit" onclick="submitForm()">Send message</button>
+      <p class="form-success" id="form-success">Message sent — I'll get back to you soon.</p>
+    </div>
+  </section>
+
+  <div id="project-view" class="project-view">
+    <span class="project-back" id="back-btn">Back</span>
+    <div class="project-layout">
+      <div class="project-meta">
+        <h2 id="pv-title"></h2>
+        <div class="meta-item" id="wrap-director">
+          <div class="meta-label">Director</div>
+          <div class="meta-value" id="pv-director"></div>
+        </div>
+        <div class="meta-item" id="wrap-production">
+          <div class="meta-label">Prod Co</div>
+          <div class="meta-value" id="pv-production"></div>
+        </div>
+        <div class="meta-item" id="wrap-posthouse" style="display:none">
+          <div class="meta-label">Post House</div>
+          <div class="meta-value" id="pv-posthouse"></div>
+        </div>
+      </div>
+      <div class="video-col">
+        <div class="video-wrapper">
+          <iframe id="pv-iframe" src="" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <div class="project-nav">
+          <button class="project-nav-btn prev" id="btn-prev" onclick="navigateProject(-1)">Prev</button>
+          <button class="project-nav-btn next" id="btn-next" onclick="navigateProject(1)">Next</button>
+        </div>
+      </div>
+    </div>
+    <div class="related-grid" id="related-grid"></div>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-social">
+    <a href="https://vimeo.com/showcase/8984756" target="_blank" rel="noopener" aria-label="Vimeo">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M23.977 6.416c-.105 2.338-1.739 5.543-4.894 9.609-3.268 4.247-6.026 6.37-8.29 6.37-1.409 0-2.578-1.294-3.553-3.881L5.322 12.5C4.603 9.913 3.83 8.619 3 8.619c-.13 0-.58.27-1.354.81L.748 8.132c.852-.749 1.684-1.498 2.498-2.247C4.523 4.8 5.584 4.112 6.39 4.04c2.06-.198 3.332 1.208 3.81 4.218.515 3.25.872 5.274 1.072 6.07.595 2.707 1.248 4.06 1.963 4.06.556 0 1.391-.876 2.504-2.628 1.113-1.751 1.71-3.082 1.79-3.991.159-1.507-.435-2.261-1.79-2.261-.637 0-1.294.146-1.963.44 1.305-4.277 3.797-6.354 7.474-6.229 2.725.085 4.007 1.847 3.727 5.287z"/></svg>
+    </a>
+    <a href="https://www.instagram.com/mikelkuss/" target="_blank" rel="noopener" aria-label="Instagram">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+    </a>
+  </div>
+  <span class="footer-copy">© 2026 Miqui Cussó</span>
+</footer>
+
+<script>
+// ─────────────────────────────────────────────────────────────────
+// PROJECTS
+// Para añadir un proyecto: copia una entrada y edita los campos.
+// vimeo_id: el número en la URL de Vimeo (vimeo.com/XXXXXXX)
+// posthouse: solo se muestra en la sección POST
+// ─────────────────────────────────────────────────────────────────
+const PROJECTS = {
+  editing: [
+    {
+      id: 'e01', vimeo_id: '1062332542',
+      titulo: 'GAMRFIRST — Online Casino',
+      director: 'Lonan García', production: 'Papaya Films',
+      thumbnail: 'https://i.vimeocdn.com/video/1989234370-c974a775e82ea3a0eea900d5190669c1e92c8648c3fdb427e694a4cace3ed518-d'
+    },
+    {
+      id: 'e02', vimeo_id: '988481114',
+      titulo: "Ebay — That's You",
+      director: 'Lonan García', production: 'Markenfilm'
+    },
+    {
+      id: 'e03', vimeo_id: '1166436852', vimeo_hash: '2d105c8e3f',
+      titulo: 'Changan S05 — DC',
+      director: 'Pol Penas', production: 'Coulant on Road'
+    },
+    {
+      id: 'e04', vimeo_id: '1163024668',
+      titulo: 'Bicentury — Saborizadas',
+      director: 'Lonan García', production: 'Intricate'
+    },
+    {
+      id: 'e05', vimeo_id: '988480228',
+      titulo: 'The Fork — DC',
+      director: 'Lonan García', production: 'Oxigeno'
+    },
+    {
+      id: 'e06', vimeo_id: '1062334074',
+      titulo: "DoorDash — Company's Coming",
+      director: 'Lonan García', production: 'Alfredo Films'
+    },
+    {
+      id: 'e07', vimeo_id: '1062343456',
+      titulo: '400 Conejos — The Legend',
+      director: 'Lonan García', production: 'Oxigeno'
+    },
+    {
+      id: 'e08', vimeo_id: '1163023457',
+      titulo: 'Idealista — Familia',
+      director: 'Pedro Abreu', production: 'Blua'
+    },
+    {
+      id: 'e09', vimeo_id: '641571686',
+      titulo: 'Powerade — Tokyo Olympics 2020',
+      director: 'Julien Zenier', production: 'DR Films'
+    },
+    {
+      id: 'e10', vimeo_id: '641571409',
+      titulo: 'The Boys — Prime Video Promo',
+      director: 'Lonan García', production: 'Blua'
+    },
+    {
+      id: 'e11', vimeo_id: '282088967',
+      titulo: 'VW Padre — BRUMMM',
+      director: 'Miguel Angulo', production: 'Good Company'
+    },
+    {
+      id: 'e12', vimeo_id: '282090547',
+      titulo: "Samsung — Smartgirl",
+      director: 'Alex Llopis', production: 'Good Company'
+    },
+    {
+      id: 'e13', vimeo_id: '1163028590',
+      titulo: 'Glovo — New Song5',
+      director: 'Lonan García', production: 'Blua'
+    },
+    {
+      id: 'e14', vimeo_id: '1062334051',
+      titulo: 'Kaufland — Epic Split',
+      director: 'Lonan García', production: 'Markenfilm'
+    },
+    {
+      id: 'e15', vimeo_id: '641571628',
+      titulo: 'Bizum — Solo se activa una vez',
+      director: 'Lonan García', production: 'Blua'
+    },
+    {
+      id: 'e16', vimeo_id: '1062334095',
+      titulo: 'Pfister — Hallo Vielfalt',
+      director: '—', production: '—'
+    },
+    {
+      id: 'e17', vimeo_id: '641607557',
+      titulo: 'Wallapop — TRUE STORIES Fashion',
+      director: 'Lonan García', production: 'Celofan'
+    },
+    {
+      id: 'e18', vimeo_id: '282459638',
+      titulo: 'HEAD Pro S — La Rompo',
+      director: 'Albert Grabuleda', production: 'Good Company'
+    },
+    {
+      id: 'e19', vimeo_id: '239666705',
+      titulo: 'El Corte Inglés — Dia XL',
+      director: 'Albert Grabuleda', production: 'Good Company'
+    },
+  ],
+  post: [
+    {
+      id: 'p01', vimeo_id: '1117026137',
+      titulo: 'EA Sports FC 2026 — Icons',
+      director: 'Keane Shaw', production: 'Riff Raff Films', posthouse: 'Martes Studio'
+    },
+    {
+      id: 'p02', vimeo_id: '1168881246',
+      titulo: 'Audi — Icon',
+      director: 'Nacho Gayán', production: 'Agosto', posthouse: 'La Metropolitana'
+    },
+    {
+      id: 'p02b', vimeo_id: '1183346679',
+      titulo: 'ECI — Fall 2025',
+      director: 'Alvaro Colom', production: 'Cap Dept', posthouse: 'La Metropolitana'
+    },
+    {
+      id: 'p03', vimeo_id: '1047172070',
+      titulo: 'Terra Cene',
+      director: 'Nono Ayuso & Rodrigo Inada', production: 'Landia / Impolite / Saltwater', posthouse: 'Eighty4'
+    },
+    {
+      id: 'p04', vimeo_id: '736607023',
+      titulo: 'Canon',
+      director: 'Lubos Vacke', production: 'Truffle', posthouse: 'Eighty4'
+    },
+    {
+      id: 'p05', vimeo_id: '1166436852', vimeo_hash: '2d105c8e3f',
+      titulo: 'Changan S05',
+      director: 'Pol Penas', production: 'Coulant', posthouse: 'Furiosa Studio'
+    },
+    {
+      id: 'p06', vimeo_id: '413310910',
+      titulo: 'Dua Lipa — Physical',
+      director: 'CANADA (Lope Serrano)', production: 'CANADA', posthouse: 'Eighty4'
+    },
+    {
+      id: 'p07', vimeo_id: '713311670',
+      titulo: 'Línea Directa',
+      director: 'Pep Bosch', production: 'Mamma Team', posthouse: 'Eighty4'
+    },
+    {
+      id: 'p08', vimeo_id: '641571628',
+      titulo: 'Bizum — Solo se activa una vez',
+      director: 'Lonan García', production: 'Blua', posthouse: 'Furiosa Studio'
+    },
+    {
+      id: 'p09', vimeo_id: '443369900',
+      titulo: 'Ferran Palau — Flora Caic',
+      director: 'Pablo Maestres', production: 'Bungard Film / Primo', posthouse: 'Eighty4'
+    },
+    {
+      id: 'p10', vimeo_id: '429333240',
+      titulo: 'Eclipse',
+      director: 'Gasser Bros', production: '—', posthouse: 'Eighty4'
+    },
+    {
+      id: 'p11', vimeo_id: '1062343456',
+      titulo: '400 Conejos — The Legend',
+      director: 'Lonan García', production: 'Oxigeno', posthouse: 'Eighty4'
+    },
+    {
+      id: 'p12', vimeo_id: '349842200',
+      titulo: 'La Mer',
+      director: 'Victor Claramunt', production: '3TristeTeasers / Filmworks', posthouse: 'Eighty4'
+    },
+    {
+      id: 'p13', vimeo_id: '1117739530',
+      titulo: 'ECI — Summertime',
+      director: 'Emir Eralp', production: 'Cap Dept', posthouse: 'Furiosa Studio'
+    },
+    {
+      id: 'p14', vimeo_id: '1183341587',
+      titulo: 'LOEWE x ON',
+      director: 'Sofia Alazraki', production: 'Cap Dept', posthouse: 'Furiosa Studio'
+    },
+  ]
+};
+
+// ─────────────────────────────────────────────────────────────────
+// Thumbnail via vumbnail.com — sin CORS, funciona en local
+// ─────────────────────────────────────────────────────────────────
+function thumbUrl(p) {
+  if (p.thumbnail) return p.thumbnail;
+  return p.vimeo_id ? `https://vumbnail.com/${p.vimeo_id}.jpg` : '';
+}
+
+// ─────────────────────────────────────────────────────────────────
+// URL embed Vimeo (soporte para vídeos con hash privado)
+// ─────────────────────────────────────────────────────────────────
+function embedUrl(p) {
+  if (!p.vimeo_id) return '';
+  const hash = p.vimeo_hash ? `?h=${p.vimeo_hash}&` : '?';
+  return `https://player.vimeo.com/video/${p.vimeo_id}${hash}autoplay=1&color=b8213a&title=0&byline=0&portrait=0&dnt=1`;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// RENDER GRID
+// ─────────────────────────────────────────────────────────────────
+function renderGrid(section) {
+  const container = document.getElementById('grid-' + section);
+  container.innerHTML = '';
+  PROJECTS[section].forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <img src="${thumbUrl(p)}" alt="${p.titulo}" loading="lazy">
+      <div class="card-overlay">
+        <div class="card-title">${p.titulo}</div>
+      </div>
+    `;
+    card.addEventListener('click', () => openProject(p.id, section));
+    container.appendChild(card);
+  });
+}
+
+renderGrid('editing');
+renderGrid('post');
+
+// ─────────────────────────────────────────────────────────────────
+// NAVEGACIÓN
+// ─────────────────────────────────────────────────────────────────
+let currentSection = 'editing';
+let currentId = null;
+
+function showSection(name) {
+  document.getElementById('project-view').classList.remove('active');
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  document.querySelectorAll('.nav-mobile a').forEach(a => a.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  const mob = document.getElementById('mob-' + name);
+  if (mob) mob.classList.add('active');
+  const isPost = name === 'post';
+  document.getElementById('nav-aka-desktop').style.display = isPost ? 'inline' : 'none';
+  document.getElementById('nav-aka-mobile').style.display  = isPost ? 'block'  : 'none';
+  currentSection = name;
+  currentId = null;
+  document.getElementById('pv-iframe').src = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─────────────────────────────────────────────────────────────────
+// ABRIR PROYECTO
+// ─────────────────────────────────────────────────────────────────
+function openProject(id, section) {
+  if (section) currentSection = section;
+  currentId = id;
+
+  const list = PROJECTS[currentSection];
+  const p    = list.find(x => x.id === id);
+  if (!p) return;
+  const idx = list.indexOf(p);
+
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('project-view').classList.add('active');
+
+  document.getElementById('pv-title').textContent      = p.titulo;
+  document.getElementById('pv-director').textContent   = p.director  || '—';
+  document.getElementById('pv-production').textContent = p.production || '—';
+
+  // Post house: solo visible en sección post y si tiene valor
+  const phWrap = document.getElementById('wrap-posthouse');
+  const phVal  = document.getElementById('pv-posthouse');
+  if (currentSection === 'post' && p.posthouse && p.posthouse !== '—') {
+    phVal.textContent = p.posthouse;
+    phWrap.style.display = 'block';
+  } else {
+    phWrap.style.display = 'none';
+  }
+
+  document.getElementById('pv-iframe').src = embedUrl(p);
+  document.getElementById('back-btn').onclick = () => showSection(currentSection);
+  document.getElementById('btn-prev').disabled = idx === 0;
+  document.getElementById('btn-next').disabled = idx === list.length - 1;
+
+  // Related thumbnails
+  const rel = document.getElementById('related-grid');
+  rel.innerHTML = '';
+  list.forEach(rp => {
+    const card = document.createElement('div');
+    card.className = 'card' + (rp.id === id ? ' active-card' : '');
+    card.innerHTML = `
+      <img src="${thumbUrl(rp)}" alt="${rp.titulo}" loading="lazy">
+      <div class="card-overlay">
+        <div class="card-title">${rp.titulo}</div>
+      </div>
+    `;
+    card.addEventListener('click', () => openProject(rp.id));
+    rel.appendChild(card);
+  });
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleMenu() {
+  document.getElementById('navMobile').classList.toggle('open');
+}
+
+function navigateProject(dir) {
+  const list = PROJECTS[currentSection];
+  const idx  = list.findIndex(x => x.id === currentId);
+  const next = list[idx + dir];
+  if (next) openProject(next.id);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// FORMULARIO
+// ─────────────────────────────────────────────────────────────────
+function submitForm() {
+  const name  = document.getElementById('f-name').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const msg   = document.getElementById('f-msg').value.trim();
+  if (!name || !email || !msg) return;
+  const subject = encodeURIComponent('Portfolio contact — ' + name);
+  const body    = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${msg}`);
+  window.location.href = `mailto:miquelcusso@gmail.com?subject=${subject}&body=${body}`;
+  document.getElementById('form-success').style.display = 'block';
+}
+
+// ─────────────────────────────────────────────────────────────────
+// SCROLL NAV BORDER
+// ─────────────────────────────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  const scrolled = window.scrollY > 10;
+  document.getElementById('mainNav').classList.toggle('scrolled', scrolled);
+  document.getElementById('navOuter').classList.toggle('scrolled', scrolled);
+});
+
+document.getElementById('nav-editing').classList.add('active');
+</script>
+</body>
+</html>
