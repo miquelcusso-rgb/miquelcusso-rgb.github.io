@@ -1,0 +1,12 @@
+# Miqui Cussó — Portfolio
+
+> Personal portfolio of Miqui Cussó, film editor and postproducer. Showcases editing, post-production and finishing work on audiovisual projects. Site: miquelcusso-rgb.github.io.
+
+## Pages
+
+- [Home — portfolio](https://miquelcusso-rgb.github.io/): selected film editing and post-production work.
+
+## About
+
+- Miqui Cussó is a film editor and postproducer.
+- Specialties: film editing, post-production, color grading, video editing.
