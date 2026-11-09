@@ -18,3 +18,5 @@ User-agent: Google-Extended
 Allow: /
 User-agent: CCBot
 Allow: /
+
+Sitemap: https://miquelcusso-rgb.github.io/sitemap.xml
