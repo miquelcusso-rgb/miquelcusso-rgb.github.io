@@ -45,8 +45,7 @@ THEME_BOOT = ("<script>try{if(localStorage.getItem('theme')==='light')"
               "document.documentElement.dataset.theme='light'}catch(e){}</script>")
 
 TOGGLE = ('<button class="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to white">'
-          '<span class="tt-track" aria-hidden="true"><span class="tt-knob"></span></span>'
-          '<span class="tt-label">B/W</span></button>')
+          '<span class="tt-b" aria-hidden="true">B</span><span class="tt-w" aria-hidden="true">W</span></button>')
 
 GRID_SECTION = '''  <section id="section-{key}" class="section active">
     <div class="grid" id="grid-{key}"></div>
