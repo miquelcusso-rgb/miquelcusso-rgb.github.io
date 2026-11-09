@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIQUI CUSSÓ — The Cut</title>
+  <meta name="description" content="Miqui Cussó — film editor & postproducer. Versión experimental del portfolio.">
+  <!-- Versión oculta en revisión: fuera del índice y del sitemap -->
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://miquelcusso-rgb.github.io/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✂</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>try{if(localStorage.getItem('theme')==='light')document.documentElement.dataset.theme='light'}catch(e){}</script>
+  <style>
+    :root {
+      --bg: #070707;
+      --fg: #f1f0ec;
+      --dim: #77766f;
+      --line: rgba(241,240,236,0.14);
+      --rec: #ff3b2f;
+      --sans: 'Inter Tight', 'Helvetica Neue', Arial, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+      --pad: clamp(16px, 3vw, 40px);
+      color-scheme: dark;
+    }
+    :root[data-theme="light"] {
+      --bg: #f1f0ec;
+      --fg: #0b0b0b;
+      --dim: #8a8983;
+      --line: rgba(11,11,11,0.14);
+      color-scheme: light;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      background: var(--bg); color: var(--fg);
+      font-family: var(--sans); font-size: 15px; line-height: 1.45;
+      overflow-x: hidden;
+      transition: background-color .3s, color .3s;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+    :focus-visible { outline: 1px solid var(--rec); outline-offset: 3px; }
+    .mono { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+
+    /* ── HUD (cabecera fija, en diferencia sobre la imagen) ── */
+    .hud {
+      position: fixed; inset: 0 0 auto 0; z-index: 50;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 18px var(--pad);
+      mix-blend-mode: difference; color: #fff;
+    }
+    .hud-brand { font-weight: 800; letter-spacing: -.02em; font-size: 17px; }
+    .hud-brand span { font-family: var(--mono); font-weight: 400; font-size: 10px; letter-spacing: .08em; margin-left: 10px; opacity: .7; }
+    .hud nav { display: flex; gap: clamp(14px, 2.4vw, 32px); align-items: center; }
+    .hud nav a, .hud nav button { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; opacity: .75; transition: opacity .2s; }
+    .hud nav a:hover, .hud nav button:hover { opacity: 1; }
+    .bw { display: inline-flex; gap: 5px; }
+    .bw span { opacity: .4; transition: opacity .2s; }
+    .bw .b { opacity: 1; }
+    :root[data-theme="light"] .bw .b { opacity: .4; }
+    :root[data-theme="light"] .bw .w { opacity: 1; }
+
+    /* ── HERO ── */
+    .hero { position: relative; height: 100svh; min-height: 520px; overflow: hidden; background: #000; color: #fff; }
+    .shot {
+      position: absolute; inset: 0;
+      background: #000 center / cover no-repeat;
+      opacity: 0;
+    }
+    .shot.on { opacity: 1; animation: push 4.2s linear forwards; }
+    @keyframes push { from { transform: scale(1.12); } to { transform: scale(1.0); } }
+    .hero::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background:
+        linear-gradient(to top, rgba(0,0,0,.75) 0%, rgba(0,0,0,0) 45%),
+        linear-gradient(to bottom, rgba(0,0,0,.45) 0%, rgba(0,0,0,0) 25%);
+    }
+    .flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 2; }
+    .flash.go { animation: flash .12s steps(1) 1; }
+    @keyframes flash { 0% { opacity: .9; } 100% { opacity: 0; } }
+    /* guías de encuadre */
+    .guides { position: absolute; inset: 72px var(--pad) 96px; pointer-events: none; z-index: 3; }
+    .guides i { position: absolute; width: 22px; height: 22px; border: 0 solid rgba(255,255,255,.7); }
+    .guides i:nth-child(1) { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
+    .guides i:nth-child(2) { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; }
+    .guides i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; }
+    .guides i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
+    .guides b { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; transform: translate(-50%,-50%); }
+    .guides b::before, .guides b::after { content: ''; position: absolute; background: rgba(255,255,255,.55); }
+    .guides b::before { left: 50%; top: 0; bottom: 0; width: 1px; }
+    .guides b::after { top: 50%; left: 0; right: 0; height: 1px; }
+    .hero-meta { position: absolute; z-index: 4; top: 84px; left: calc(var(--pad) + 34px); right: calc(var(--pad) + 34px); display: flex; justify-content: space-between; }
+    .rec { display: inline-flex; align-items: center; gap: 8px; }
+    .rec::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--rec); animation: blink 1.2s steps(1) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    .hero-title {
+      position: absolute; z-index: 4; left: var(--pad); right: var(--pad); bottom: 92px;
+      font-weight: 800; letter-spacing: -.055em; line-height: .8;
+      font-size: clamp(64px, 16.5vw, 300px);
+      mix-blend-mode: difference; color: #fff;
+      user-select: none;
+    }
+    .hero-title small { display: block; font-family: var(--mono); font-weight: 400; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 18px 4px; line-height: 1.4; }
+    .hero-bar {
+      position: absolute; z-index: 4; left: var(--pad); right: var(--pad); bottom: 28px;
+      display: grid; grid-template-columns: 1fr auto; gap: 8px 24px; align-items: end;
+    }
+    .hero-now { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; }
+    .hero-now strong { font-weight: 600; font-size: 15px; letter-spacing: -.01em; }
+    .hero-play { display: inline-flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 10px 16px; border: 1px solid rgba(255,255,255,.5); border-radius: 999px; transition: background .2s, color .2s; color: #fff; }
+    .hero-play:hover { background: #fff; color: #000; }
+    .scrub { grid-column: 1 / -1; height: 1px; background: rgba(255,255,255,.25); position: relative; overflow: hidden; }
+    .scrub i { position: absolute; inset: 0; background: #fff; transform-origin: left; transform: scaleX(0); }
+    .scrub i.run { animation: scrub 4.2s linear forwards; }
+    @keyframes scrub { to { transform: scaleX(1); } }
+
+    /* ── TICKER de marcas ── */
+    .ticker { border-block: 1px solid var(--line); overflow: hidden; white-space: nowrap; padding: 16px 0; }
+    .ticker-track { display: inline-flex; animation: tick 60s linear infinite; }
+    .ticker span { font-weight: 800; font-size: clamp(22px, 3.4vw, 44px); letter-spacing: -.03em; padding-right: .9em; text-transform: uppercase; }
+    .ticker span:nth-child(even) { -webkit-text-stroke: 1px var(--fg); color: transparent; }
+    @keyframes tick { to { transform: translateX(-50%); } }
+
+    /* ── WORK ── */
+    .work { padding: clamp(48px, 8vw, 120px) var(--pad) 40px; }
+    .work-head { display: flex; justify-content: space-between; align-items: end; gap: 24px; flex-wrap: wrap; margin-bottom: 28px; }
+    .work-head h2 { font-weight: 800; font-size: clamp(40px, 7vw, 104px); letter-spacing: -.05em; line-height: .85; }
+    .work-head h2 sup { font-family: var(--mono); font-weight: 400; font-size: 12px; letter-spacing: .06em; vertical-align: top; margin-left: 6px; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; position: sticky; top: 64px; }
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+    .seg button { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; color: var(--dim); transition: color .2s, background .2s; }
+    .seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+
+    /* Index */
+    .index { list-style: none; border-top: 1px solid var(--line); }
+    .row {
+      display: grid; grid-template-columns: 56px 1fr 180px 160px 56px; gap: 16px; align-items: baseline;
+      padding: 16px 0; border-bottom: 1px solid var(--line);
+      transition: opacity .25s, padding .3s;
+    }
+    .row .t { font-weight: 600; font-size: clamp(22px, 3.6vw, 52px); letter-spacing: -.035em; line-height: 1.02; transition: transform .35s cubic-bezier(.2,.7,.2,1); }
+    .row .t em { font-style: normal; color: var(--dim); }
+    .row .n, .row .d, .row .c, .row .len { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--dim); }
+    .row .len { text-align: right; }
+    .row .thumb { display: none; }
+    @media (hover: hover) {
+      .index:hover .row { opacity: .28; }
+      .index .row:hover { opacity: 1; }
+      .row:hover .t { transform: translateX(14px); }
+    }
+    .is-new { font-family: var(--mono); font-size: 10px; color: var(--rec); letter-spacing: .08em; vertical-align: super; margin-left: 8px; }
+
+    /* Peek: previsualización que sigue al cursor */
+    .peek {
+      position: fixed; z-index: 40; left: 0; top: 0; width: min(34vw, 520px); aspect-ratio: 16/9;
+      pointer-events: none; overflow: hidden; background: #000 center / cover no-repeat;
+      opacity: 0; transform: translate(6%, -50%) scale(.85);
+      transition: opacity .25s, transform .35s cubic-bezier(.2,.7,.2,1);
+    }
+    .peek.show { opacity: 1; transform: translate(6%, -50%) scale(1); }
+    .vid { position: absolute; inset: 0; opacity: 0; transition: opacity .4s; }
+    .vid.playing { opacity: 1; }
+    .vid iframe { position: absolute; top: 50%; left: 50%; width: 100%; height: 100%; transform: translate(-50%,-50%) scale(1.02); border: 0; }
+
+    /* Grid (bento) */
+    .mosaic {
+      display: none; grid-template-columns: repeat(4, 1fr); grid-auto-flow: dense; gap: 6px;
+      grid-auto-rows: calc((100vw - 2 * var(--pad) - 18px) / 4 * 0.5625);
+    }
+    .view-grid .mosaic { display: grid; }
+    .view-grid .index { display: none; }
+    .tile { position: relative; overflow: hidden; background: #111 center / cover no-repeat; }
+    .tile:nth-child(6n+1) { grid-column: span 2; grid-row: span 2; }
+    .tile:nth-child(6n+4) { grid-column: span 2; }
+    .tile .bg { position: absolute; inset: 0; background: inherit; transition: transform .8s cubic-bezier(.2,.7,.2,1), filter .4s; }
+    .tile:hover .bg { transform: scale(1.06); filter: brightness(.7); }
+    .tile .cap { position: absolute; left: 12px; right: 12px; bottom: 10px; color: #fff; z-index: 2; display: flex; justify-content: space-between; gap: 10px; align-items: end; opacity: 0; transform: translateY(6px); transition: opacity .3s, transform .3s; }
+    .tile .cap strong { font-weight: 600; font-size: 15px; letter-spacing: -.01em; line-height: 1.15; }
+    .tile:hover .cap, .tile:focus-visible .cap { opacity: 1; transform: none; }
+    .tile::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.7), transparent 55%); opacity: 0; transition: opacity .3s; z-index: 1; }
+    .tile:hover::after { opacity: 1; }
+
+    /* ── PLAYER ── */
+    .player {
+      position: fixed; inset: 0; z-index: 100; background: #000; color: #fff;
+      display: grid; grid-template-rows: auto 1fr auto auto; opacity: 0; pointer-events: none; transition: opacity .3s;
+    }
+    .player.open { opacity: 1; pointer-events: auto; }
+    .p-top { display: flex; justify-content: space-between; align-items: center; padding: 16px var(--pad); }
+    .p-close { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; opacity: .8; }
+    .p-close:hover { opacity: 1; }
+    .p-stage { display: flex; align-items: center; justify-content: center; padding: 0 var(--pad); min-height: 0; }
+    .p-frame { position: relative; width: min(100%, calc((100svh - 260px) * 16 / 9)); aspect-ratio: 16/9; background: #0c0c0c; }
+    .p-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .p-info { display: grid; grid-template-columns: 1fr auto; gap: 16px; padding: 18px var(--pad) 12px; align-items: end; }
+    .p-info h3 { font-weight: 800; font-size: clamp(24px, 3.4vw, 44px); letter-spacing: -.04em; line-height: 1; }
+    .p-credits { display: flex; gap: 28px; flex-wrap: wrap; margin-top: 10px; }
+    .p-credits div { font-size: 14px; }
+    .p-credits span { display: block; color: #8d8c86; }
+    .p-nav { display: flex; gap: 8px; }
+    .p-nav button { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; border: 1px solid rgba(255,255,255,.3); border-radius: 999px; padding: 10px 14px; transition: background .2s, color .2s; }
+    .p-nav button:hover:not(:disabled) { background: #fff; color: #000; }
+    .p-nav button:disabled { opacity: .25; cursor: default; }
+    .p-nav kbd { font-family: inherit; opacity: .55; margin: 0 4px; }
+    .strip { display: flex; gap: 4px; overflow-x: auto; padding: 10px var(--pad) 18px; scrollbar-width: none; }
+    .strip::-webkit-scrollbar { display: none; }
+    .strip button { flex: 0 0 auto; width: 120px; aspect-ratio: 16/9; background: #111 center / cover no-repeat; opacity: .35; transition: opacity .2s; position: relative; }
+    .strip button:hover { opacity: .8; }
+    .strip button.cur { opacity: 1; }
+    .strip button.cur::after { content: ''; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: var(--rec); }
+
+    /* ── CONTACT ── */
+    .contact { padding: clamp(80px, 14vw, 200px) var(--pad) 60px; border-top: 1px solid var(--line); }
+    .contact h2 { font-weight: 800; font-size: clamp(48px, 10.5vw, 190px); letter-spacing: -.06em; line-height: .82; }
+    .contact h2 .out { -webkit-text-stroke: 1.5px var(--fg); color: transparent; }
+    .contact-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 48px; align-items: center; }
+    .pill { display: inline-flex; align-items: center; gap: 10px; padding: 16px 26px; border: 1px solid var(--fg); border-radius: 999px; font-weight: 500; font-size: 16px; transition: background .2s, color .2s; }
+    .pill:hover, .pill.solid { background: var(--fg); color: var(--bg); }
+    .pill.solid:hover { background: transparent; color: var(--fg); }
+    footer { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 24px var(--pad) 32px; color: var(--dim); }
+    footer a:hover { color: var(--fg); }
+
+    /* ── reveal al hacer scroll ── */
+    .rv { opacity: 0; transform: translateY(24px); transition: opacity .8s, transform .8s cubic-bezier(.2,.7,.2,1); }
+    .rv.in { opacity: 1; transform: none; }
+
+    /* ── MÓVIL ── */
+    @media (max-width: 760px) {
+      .hud-brand span, .hud nav .hide-m { display: none; }
+      .guides { inset: 64px 12px 120px; }
+      .hero-meta { top: 76px; left: 28px; right: 28px; }
+      .hero-meta .fps { display: none; }
+      .hero-title { bottom: 178px; }
+      .guides { bottom: 170px; }
+      .hero-bar { grid-template-columns: 1fr; }
+      .row { grid-template-columns: 92px 1fr; gap: 4px 14px; padding: 12px 0; align-items: center; }
+      .row .thumb { display: block; grid-row: span 3; width: 92px; aspect-ratio: 16/9; background: #111 center / cover no-repeat; }
+      .row .n, .row .len { display: none; }
+      .row .t { font-size: 19px; }
+      .row .d, .row .c { font-size: 10px; }
+      .mosaic { grid-template-columns: repeat(2, 1fr); grid-auto-rows: calc((100vw - 2 * var(--pad) - 6px) / 2 * 0.5625); }
+      .tile:nth-child(6n+4) { grid-column: auto; }
+      .tile .cap { opacity: 1; transform: none; }
+      .tile::after { opacity: 1; }
+      .controls { top: 56px; }
+      .p-info { grid-template-columns: 1fr; }
+      .strip button { width: 92px; }
+    }
+    @media (hover: none) { .peek { display: none; } }
+    @media (prefers-reduced-motion: reduce) {
+      .shot.on, .scrub i.run, .ticker-track, .rec::before { animation: none; }
+      .rv { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="hud">
+  <a class="hud-brand" href="#top">MIQUI CUSSÓ<span>AKA FURIOSA STUDIO</span></a>
+  <nav>
+    <button class="bw" type="button" id="bw" aria-label="Switch to white"><span class="b">B</span><span class="w">W</span></button>
+    <a href="#work" data-filter="editing">Editing</a>
+    <a href="#work" data-filter="post">Post</a>
+    <a href="#contact">Contact</a>
+  </nav>
+</header>
+
+<section class="hero" id="top" aria-label="Showreel">
+  <div class="shot" id="shotA"></div>
+  <div class="shot" id="shotB"></div>
+  <div class="flash" id="flash"></div>
+  <div class="guides" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></div>
+  <div class="hero-meta mono" aria-hidden="true">
+    <span class="rec">TC <span id="tc">00:00:00:00</span></span>
+    <span class="fps">25 FPS · 16:9 · SHOT <span id="shotN">01</span>/<span id="shotT">08</span></span>
+  </div>
+  <h1 class="hero-title"><small>Film editor &amp; postproducer</small>MIQUI<br>CUSSÓ</h1>
+  <div class="hero-bar">
+    <div class="hero-now"><span class="mono">Now cutting</span><strong id="nowTitle">—</strong><span class="mono" id="nowCred"></span></div>
+    <button class="hero-play" type="button" id="heroPlay">▶ Play</button>
+    <div class="scrub"><i id="scrub"></i></div>
+  </div>
+</section>
+
+<div class="ticker" aria-hidden="true"><div class="ticker-track" id="ticker"></div></div>
+
+<section class="work" id="work">
+  <div class="work-head rv">
+    <h2 id="workTitle">Editing<sup id="workCount"></sup></h2>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Section">
+        <button type="button" data-set="editing" aria-pressed="true">Editing</button>
+        <button type="button" data-set="post" aria-pressed="false">Post</button>
+      </div>
+      <div class="seg" role="group" aria-label="View">
+        <button type="button" data-view="index" aria-pressed="true">Index</button>
+        <button type="button" data-view="grid" aria-pressed="false">Grid</button>
+      </div>
+    </div>
+  </div>
+  <ol class="index" id="index"></ol>
+  <div class="mosaic" id="mosaic"></div>
+</section>
+
+<section class="contact" id="contact">
+  <h2 class="rv">Let's cut<br><span class="out">something.</span></h2>
+  <div class="contact-row rv">
+    <a class="pill solid" href="#" id="mailBtn">Write me ↗</a>
+    <a class="pill" href="https://www.linkedin.com/in/miquelcusso/" target="_blank" rel="noopener">LinkedIn</a>
+    <a class="pill" href="https://vimeo.com/showcase/8984756" target="_blank" rel="noopener">Vimeo</a>
+    <a class="pill" href="https://www.instagram.com/mikelkuss/" target="_blank" rel="noopener">Instagram</a>
+  </div>
+</section>
+
+<footer class="mono">
+  <span>© 2026 Miqui Cussó</span>
+  <span>Film editor &amp; postproducer — aka Furiosa Studio</span>
+  <a href="/">Classic version ↗</a>
+</footer>
+
+<div class="peek" id="peek" aria-hidden="true"></div>
+
+<div class="player" id="player" role="dialog" aria-modal="true" aria-label="Video player">
+  <div class="p-top mono">
+    <span><span id="pIdx">01</span> / <span id="pTot">22</span> — <span id="pSet">Editing</span></span>
+    <button class="p-close" type="button" id="pClose">Close <kbd>esc</kbd> ✕</button>
+  </div>
+  <div class="p-stage"><div class="p-frame"><iframe id="pFrame" title="Video" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></div></div>
+  <div class="p-info">
+    <div>
+      <h3 id="pTitle"></h3>
+      <div class="p-credits" id="pCredits"></div>
+    </div>
+    <div class="p-nav">
+      <button type="button" id="pPrev"><kbd>J</kbd>← Prev</button>
+      <button type="button" id="pNext">Next →<kbd>L</kbd></button>
+    </div>
+  </div>
+  <div class="strip" id="strip"></div>
+</div>
+
+<script src="/assets/projects.js"></script>
+<script src="https://player.vimeo.com/api/player.js" async id="vimeoSdk"></script>
+<script>
+(() => {
+  const P = window.PROJECTS;
+  const $ = id => document.getElementById(id);
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const canHover = matchMedia('(hover: hover)').matches;
+  const NEW = new Set(['e20', 'e21', 'e22']);
+  const all = [...P.editing.map(p => ({ ...p, set: 'editing' })), ...P.post.map(p => ({ ...p, set: 'post' }))];
+  const byId = Object.fromEntries(all.map(p => [p.id, p]));
+
+  // ── Metadatos de Vimeo (miniatura grande + duración) vía oEmbed, con caché ──
+  const meta = {};
+  let cache = {};
+  try { cache = JSON.parse(sessionStorage.getItem('vmeta') || '{}'); } catch (e) {}
+  const vimeoUrl = p => `https://vimeo.com/${p.vimeo_id}${p.vimeo_hash ? '/' + p.vimeo_hash : ''}`;
+  const thumb = p => (meta[p.vimeo_id] && meta[p.vimeo_id].thumb) || p.thumbnail || `https://vumbnail.com/${p.vimeo_id}.jpg`;
+  const isPlaceholder = p => /\/default-/.test(thumb(p));
+  const dur = p => {
+    const s = meta[p.vimeo_id] && meta[p.vimeo_id].duration;
+    return s ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : '';
+  };
+  function loadMeta() {
+    const ids = [...new Map(all.map(p => [p.vimeo_id, p])).values()];
+    return Promise.all(ids.map(p => {
+      if (cache[p.vimeo_id]) { meta[p.vimeo_id] = cache[p.vimeo_id]; return; }
+      return fetch(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent(vimeoUrl(p))}&width=1280`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (!d) return;
+          const m = { thumb: d.thumbnail_url && !/\/default-/.test(d.thumbnail_url) ? d.thumbnail_url : null, duration: d.duration };
+          if (!m.thumb) delete m.thumb;
+          meta[p.vimeo_id] = m;
+          if (m.thumb) cache[p.vimeo_id] = m; // no cachear placeholders: la miniatura puede aparecer luego
+        }).catch(() => {});
+    })).then(() => { try { sessionStorage.setItem('vmeta', JSON.stringify(cache)); } catch (e) {} });
+  }
+
+  // ── Vídeo en bucle silenciado (solo si Vimeo confirma que reproduce) ──
+  function attachVideo(host, p) {
+    if (!window.Vimeo || !window.Vimeo.Player) return null;
+    const box = document.createElement('div');
+    box.className = 'vid';
+    host.appendChild(box);
+    let player;
+    try {
+      player = new Vimeo.Player(box, { url: vimeoUrl(p), background: true, muted: true, loop: true, dnt: true, autopause: false });
+      player.on('timeupdate', function once(d) {
+        if (d.seconds > 0.1) { box.classList.add('playing'); player.off('timeupdate', once); }
+      });
+      player.ready().catch(() => box.remove());
+    } catch (e) { box.remove(); return null; }
+    return () => { try { player.destroy(); } catch (e) {} box.remove(); };
+  }
+
+  // ── Timecode a 25 fps ──
+  const t0 = performance.now();
+  (function tc() {
+    const f = Math.floor((performance.now() - t0) / 40);
+    const ff = f % 25, s = Math.floor(f / 25) % 60, m = Math.floor(f / 1500) % 60, h = Math.floor(f / 90000);
+    $('tc').textContent = [h, m, s, ff].map(v => String(v).padStart(2, '0')).join(':');
+    requestAnimationFrame(tc);
+  })();
+
+  // ── HERO: montaje de planos con corte seco ──
+  let reel = [], shot = -1, front = $('shotA'), back = $('shotB'), heroTimer;
+  function cut() {
+    if (!reel.length) return;
+    shot = (shot + 1) % reel.length;
+    const p = reel[shot];
+    back.style.backgroundImage = `url("${thumb(p)}")`;
+    back.classList.remove('on'); void back.offsetWidth; back.classList.add('on');
+    front.classList.remove('on');
+    [front, back] = [back, front];
+    if (!reduced && shot % 3 === 2) { const fl = $('flash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go'); }
+    $('shotN').textContent = String(shot + 1).padStart(2, '0');
+    $('nowTitle').textContent = p.titulo;
+    $('nowCred').textContent = p.director && p.director !== '—' ? 'dir. ' + p.director : '';
+    const sc = $('scrub'); sc.classList.remove('run'); void sc.offsetWidth; sc.classList.add('run');
+  }
+  function startHero() {
+    clearInterval(heroTimer); shot = -1;
+    const feat = (window.FEATURED || []).map(id => byId[id]).filter(Boolean);
+    reel = (feat.length ? feat : all).filter(p => !isPlaceholder(p));
+    if (!reel.length) reel = all.slice(0, 8);
+    $('shotT').textContent = String(reel.length).padStart(2, '0');
+    reel.forEach(p => { const i = new Image(); i.src = thumb(p); });
+    cut();
+    if (!reduced) heroTimer = setInterval(cut, 4200);
+  }
+  $('heroPlay').addEventListener('click', () => { const p = reel[shot]; if (p) openPlayer(p.set, p.id, true); });
+
+  // ── Ticker de marcas ──
+  function buildTicker() {
+    const brands = [...new Set(all.map(p => p.titulo.split(' — ')[0].trim()))];
+    const html = brands.map(b => `<span>${b}</span>`).join('');
+    $('ticker').innerHTML = html + html;
+  }
+
+  // ── WORK: índice + mosaico ──
+  let set = 'editing';
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function titleHtml(p) {
+    const [a, b] = p.titulo.split(' — ');
+    return esc(a) + (b ? ` <em>— ${esc(b)}</em>` : '') + (NEW.has(p.id) ? '<span class="is-new">NEW</span>' : '');
+  }
+  function renderWork() {
+    const list = P[set];
+    $('workTitle').firstChild.textContent = set === 'editing' ? 'Editing' : 'Post';
+    $('workCount').textContent = '(' + list.length + ')';
+    $('index').innerHTML = list.map((p, i) => `
+      <li><a class="row" href="?p=${p.id}" data-id="${p.id}">
+        <span class="thumb" style="background-image:url('${thumb(p)}')"></span>
+        <span class="n">${String(i + 1).padStart(3, '0')}</span>
+        <span class="t">${titleHtml(p)}</span>
+        <span class="d">${esc(p.director || '—')}</span>
+        <span class="c">${esc(set === 'post' && p.posthouse ? p.posthouse : p.production || '—')}</span>
+        <span class="len">${dur(p)}</span>
+      </a></li>`).join('');
+    $('mosaic').innerHTML = list.map(p => `
+      <a class="tile" href="?p=${p.id}" data-id="${p.id}" style="background-image:url('${thumb(p)}')">
+        <span class="bg"></span>
+        <span class="cap"><strong>${esc(p.titulo)}</strong><span class="mono">${dur(p)}</span></span>
+      </a>`).join('');
+    document.querySelectorAll('[data-set]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.set === set)));
+  }
+  function setSet(s) { if (s === set) return; set = s; renderWork(); }
+  document.querySelectorAll('[data-set]').forEach(b => b.addEventListener('click', () => setSet(b.dataset.set)));
+  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => {
+    $('work').classList.toggle('view-grid', b.dataset.view === 'grid');
+    document.querySelectorAll('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  }));
+  document.querySelectorAll('.hud [data-filter]').forEach(a => a.addEventListener('click', () => setSet(a.dataset.filter)));
+
+  // Clic en un trabajo → reproductor (Cmd/Ctrl-clic abre en pestaña nueva)
+  $('work').addEventListener('click', e => {
+    const a = e.target.closest('[data-id]');
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault();
+    openPlayer(set, a.dataset.id, true);
+  });
+
+  // ── Peek que sigue al cursor sobre el índice ──
+  const peek = $('peek');
+  let px = 0, py = 0, tx = 0, ty = 0, peekId = null, peekOff = null, peekTimer = null;
+  (function follow() { px += (tx - px) * .16; py += (ty - py) * .16; peek.style.left = px + 'px'; peek.style.top = py + 'px'; requestAnimationFrame(follow); })();
+  if (canHover) {
+    $('index').addEventListener('mousemove', e => { tx = e.clientX; ty = e.clientY; });
+    $('index').addEventListener('mouseover', e => {
+      const a = e.target.closest('.row'); if (!a || a.dataset.id === peekId) return;
+      peekId = a.dataset.id;
+      const p = P[set].find(x => x.id === peekId);
+      if (peekOff) { peekOff(); peekOff = null; }
+      clearTimeout(peekTimer);
+      peek.style.backgroundImage = `url("${thumb(p)}")`;
+      if (!peek.classList.contains('show')) { px = tx; py = ty; }
+      peek.classList.add('show');
+      peekTimer = setTimeout(() => { peekOff = attachVideo(peek, p); }, 450);
+    });
+    $('index').addEventListener('mouseleave', () => {
+      peek.classList.remove('show'); peekId = null; clearTimeout(peekTimer);
+      if (peekOff) { peekOff(); peekOff = null; }
+    });
+    // Mosaico: vídeo dentro de la tesela al pasar el ratón
+    let tileOff = null, tileTimer = null;
+    $('mosaic').addEventListener('mouseover', e => {
+      const t = e.target.closest('.tile'); if (!t || t.dataset.live) return;
+      document.querySelectorAll('.tile[data-live]').forEach(x => delete x.dataset.live);
+      if (tileOff) { tileOff(); tileOff = null; }
+      clearTimeout(tileTimer);
+      t.dataset.live = '1';
+      const p = P[set].find(x => x.id === t.dataset.id);
+      tileTimer = setTimeout(() => { tileOff = attachVideo(t, p); }, 450);
+    });
+    $('mosaic').addEventListener('mouseleave', () => {
+      clearTimeout(tileTimer); if (tileOff) { tileOff(); tileOff = null; }
+      document.querySelectorAll('.tile[data-live]').forEach(x => delete x.dataset.live);
+    });
+  }
+
+  // ── PLAYER ──
+  let pSet = 'editing', pId = null;
+  function embed(p) {
+    const h = p.vimeo_hash ? `h=${p.vimeo_hash}&` : '';
+    return `https://player.vimeo.com/video/${p.vimeo_id}?${h}autoplay=1&color=ff3b2f&title=0&byline=0&portrait=0&dnt=1`;
+  }
+  function openPlayer(s, id, push) {
+    const list = P[s]; const i = list.findIndex(x => x.id === id); if (i < 0) return;
+    const p = list[i]; pSet = s; pId = id;
+    $('pFrame').src = embed(p);
+    $('pTitle').textContent = p.titulo;
+    const cred = [['Director', p.director], ['Prod Co', p.production]];
+    if (s === 'post' && p.posthouse && p.posthouse !== '—') cred.push(['Post House', p.posthouse]);
+    $('pCredits').innerHTML = cred.map(([k, v]) => `<div><span class="mono">${k}</span>${esc(v || '—')}</div>`).join('');
+    $('pIdx').textContent = String(i + 1).padStart(2, '0');
+    $('pTot').textContent = String(list.length).padStart(2, '0');
+    $('pSet').textContent = s === 'editing' ? 'Editing' : 'Post';
+    $('pPrev').disabled = i === 0; $('pNext').disabled = i === list.length - 1;
+    $('strip').innerHTML = list.map(x => `<button type="button" data-id="${x.id}" class="${x.id === id ? 'cur' : ''}" style="background-image:url('${thumb(x)}')" aria-label="${esc(x.titulo)}"></button>`).join('');
+    const cur = $('strip').querySelector('.cur'); if (cur) cur.scrollIntoView({ inline: 'center', block: 'nearest' });
+    $('player').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    document.title = p.titulo + ' — Miqui Cussó';
+    if (push) history.pushState({ p: id }, '', '?p=' + id);
+    clearInterval(heroTimer);
+  }
+  function closePlayer(push) {
+    $('player').classList.remove('open');
+    $('pFrame').src = 'about:blank';
+    document.body.style.overflow = '';
+    document.title = 'MIQUI CUSSÓ — The Cut';
+    if (push) history.pushState({}, '', location.pathname);
+    if (!reduced) { clearInterval(heroTimer); heroTimer = setInterval(cut, 4200); }
+  }
+  function step(d) { const list = P[pSet]; const i = list.findIndex(x => x.id === pId); const n = list[i + d]; if (n) openPlayer(pSet, n.id, true); }
+  $('pClose').addEventListener('click', () => closePlayer(true));
+  $('pPrev').addEventListener('click', () => step(-1));
+  $('pNext').addEventListener('click', () => step(1));
+  $('strip').addEventListener('click', e => { const b = e.target.closest('[data-id]'); if (b) openPlayer(pSet, b.dataset.id, true); });
+  document.addEventListener('keydown', e => {
+    if (!$('player').classList.contains('open')) return;
+    if (e.key === 'Escape') closePlayer(true);
+    if (e.key === 'j' || e.key === 'J' || e.key === 'ArrowLeft') step(-1);
+    if (e.key === 'l' || e.key === 'L' || e.key === 'ArrowRight') step(1);
+  });
+  function route() {
+    const id = new URLSearchParams(location.search).get('p');
+    const p = id && byId[id];
+    if (p) { set = p.set; renderWork(); openPlayer(p.set, id, false); }
+    else if ($('player').classList.contains('open')) closePlayer(false);
+  }
+  addEventListener('popstate', route);
+
+  // ── Tema B W ──
+  function syncBw() { const l = document.documentElement.dataset.theme === 'light'; $('bw').setAttribute('aria-label', l ? 'Switch to black' : 'Switch to white'); }
+  $('bw').addEventListener('click', () => {
+    const l = document.documentElement.dataset.theme !== 'light';
+    document.documentElement.dataset.theme = l ? 'light' : 'dark';
+    try { localStorage.setItem('theme', l ? 'light' : 'dark'); } catch (e) {}
+    syncBw();
+  });
+  syncBw();
+
+  // ── Email ensamblado en runtime ──
+  $('mailBtn').addEventListener('click', e => {
+    e.preventDefault();
+    location.href = 'mailto:' + ['miquelcusso', String.fromCharCode(64), 'gmail', '.', 'com'].join('') + '?subject=' + encodeURIComponent('Project — via portfolio');
+  });
+
+  // ── Reveal ──
+  const io = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), { threshold: .15 });
+  document.querySelectorAll('.rv').forEach(el => io.observe(el));
+
+  // ── Arranque ──
+  buildTicker();
+  renderWork();
+  route();
+  startHero(); // arranca ya con miniaturas básicas…
+  loadMeta().then(() => { renderWork(); if (!$('player').classList.contains('open')) startHero(); }); // …y pasa a las de alta resolución
+})();
+</script>
+</body>
+</html>

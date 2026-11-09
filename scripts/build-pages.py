@@ -6,7 +6,7 @@
 Salida: index.html (Editing), post/index.html, contact/index.html y
 editing/index.html (redirección a /). Edita cabecera, footer o metadatos
 AQUÍ y vuelve a ejecutar; no edites los .html generados a mano.
-Los proyectos (vídeos) viven en assets/site.js.
+Los proyectos (vídeos) viven en assets/projects.js.
 """
 import json
 import pathlib
@@ -203,6 +203,7 @@ def page_html(key, page):
 
 {FOOTER}
 
+<script src="/assets/projects.js"></script>
 <script src="/assets/site.js"></script>
 </body>
 </html>
