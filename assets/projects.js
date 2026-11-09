@@ -101,7 +101,7 @@ window.PROJECTS = {
     {
       id: 'e16', vimeo_id: '1062334095',
       titulo: 'Pfister — Hallo Vielfalt',
-      director: '—', production: '—'
+      director: 'Lonan García', production: 'Markenfilm Switzerland'
     },
     {
       id: 'e17', vimeo_id: '641607557',
