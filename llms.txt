@@ -4,7 +4,9 @@
 
 ## Pages
 
-- [Home — portfolio](https://miquelcusso-rgb.github.io/): selected film editing and post-production work.
+- [Editing](https://miquelcusso-rgb.github.io/): selected film editing work (commercials, brand films).
+- [Post](https://miquelcusso-rgb.github.io/post/): post-production and finishing work, as Furiosa Studio.
+- [Contact](https://miquelcusso-rgb.github.io/contact/): contact form and LinkedIn.
 
 ## About
 
