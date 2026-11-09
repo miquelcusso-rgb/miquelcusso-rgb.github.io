@@ -3,12 +3,15 @@
 
     python3 scripts/build-pages.py
 
-Salida: index.html (Editing), post/index.html, contact/index.html y
-editing/index.html (redirección a /). Edita cabecera, footer o metadatos
-AQUÍ y vuelve a ejecutar; no edites los .html generados a mano.
-Los proyectos (vídeos) viven en assets/projects.js.
+Plantilla: templates/the-cut.html (diseño, estilos y JS de la web).
+Salida: index.html (Editing), post/index.html, contact/index.html,
+editing/index.html y v2/index.html (redirecciones a /) y sitemap.xml.
+No edites los .html generados a mano: edita la plantilla o los metadatos
+de aquí y vuelve a ejecutar. Los vídeos viven en assets/projects.js y sus
+miniaturas en assets/thumbs.js (scripts/build-thumbs.py).
 """
 import hashlib
+import html
 import json
 import pathlib
 import re
@@ -21,14 +24,11 @@ SAME_AS = ["https://www.linkedin.com/in/miquelcusso/",
            "https://www.instagram.com/mikelkuss/",
            "https://vimeo.com/showcase/8984756"]
 
-# Footer: se reutiliza tal cual del index.html actual (iconos SVG).
-FOOTER = re.search(r'<footer>.*?</footer>', (ROOT / 'index.html').read_text(), re.S).group(0)
-
 PAGES = {
     'editing': {
         'path': '/', 'file': 'index.html',
         'title': 'MIQUI CUSSÓ — Film Editor & Postproducer',
-        'desc': 'Portfolio de Miqui Cussó, montador de cine y postproductor. Edición, postproducción y acabado de proyectos audiovisuales.',
+        'desc': 'Portfolio de Miqui Cussó, montador de cine y postproductor. Edición, postproducción y acabado de spots y piezas de marca para OYSHO, EA Sports, Audi y más.',
     },
     'post': {
         'path': '/post/', 'file': 'post/index.html',
@@ -41,72 +41,37 @@ PAGES = {
         'desc': 'Contacta con Miqui Cussó, montador de cine y postproductor freelance, para proyectos de edición, postproducción y acabado.',
     },
 }
-NAV = [('editing', 'Editing', '/'), ('post', 'Post', '/post/'), ('contact', 'Contact', '/contact/')]
-
-THEME_BOOT = ("<script>try{if(localStorage.getItem('theme')==='light')"
-              "document.documentElement.dataset.theme='light'}catch(e){}</script>")
-
-TOGGLE = ('<button class="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to white">'
-          '<span class="tt-b" aria-hidden="true">B</span><span class="tt-w" aria-hidden="true">W</span></button>')
-
-GRID_SECTION = '''  <section id="section-{key}" class="section active">
-    <div class="grid" id="grid-{key}"></div>
-  </section>
-
-  <div id="project-view" class="project-view">
-    <a class="project-back" id="back-btn" href="{path}">Back</a>
-    <div class="project-layout">
-      <div class="project-meta">
-        <h2 id="pv-title"></h2>
-        <div class="meta-item" id="wrap-director">
-          <div class="meta-label">Director</div>
-          <div class="meta-value" id="pv-director"></div>
-        </div>
-        <div class="meta-item" id="wrap-production">
-          <div class="meta-label">Prod Co</div>
-          <div class="meta-value" id="pv-production"></div>
-        </div>
-        <div class="meta-item" id="wrap-posthouse" style="display:none">
-          <div class="meta-label">Post House</div>
-          <div class="meta-value" id="pv-posthouse"></div>
-        </div>
-      </div>
-      <div class="video-col">
-        <div class="video-wrapper">
-          <iframe id="pv-iframe" src="" title="Video player" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
-        </div>
-        <div class="project-nav">
-          <button class="project-nav-btn prev" id="btn-prev" type="button">Prev</button>
-          <button class="project-nav-btn next" id="btn-next" type="button">Next</button>
-        </div>
-      </div>
-    </div>
-    <div class="related-grid" id="related-grid"></div>
-  </div>'''
-
-CONTACT_SECTION = '''  <section id="section-contact" class="section active">
-    <div class="contact-wrap">
-      <h2>Contact</h2>
-      <p>Let's work together. You can also find me on <a href="https://www.linkedin.com/in/miquelcusso/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">LinkedIn</a>.</p>
-      <div class="form-group">
-        <label for="f-name">Name</label>
-        <input type="text" id="f-name" autocomplete="name">
-      </div>
-      <div class="form-group">
-        <label for="f-email">Email</label>
-        <input type="email" id="f-email" autocomplete="email">
-      </div>
-      <div class="form-group">
-        <label for="f-msg">Message</label>
-        <textarea id="f-msg"></textarea>
-      </div>
-      <button class="btn-submit" id="btn-submit" type="button">Send message</button>
-      <p class="form-success" id="form-success">Message sent — I'll get back to you soon.</p>
-    </div>
-  </section>'''
 
 
-def jsonld(key, page):
+def load_projects():
+    """Lee assets/projects.js (objetos JS planos) → {'editing': [...], 'post': [...]}."""
+    src = (ROOT / 'assets/projects.js').read_text()
+    out = {}
+    for sec in ('editing', 'post'):
+        body = re.search(sec + r': \[(.*?)\n  \]', src, re.S).group(1)
+        items = []
+        for block in re.findall(r'\{(.*?)\}', body, re.S):
+            def field(k):
+                m = re.search(k + r""":\s*(['"])(.*?)\1""", block)
+                return m.group(2) if m else ''
+            items.append({k: field(k) for k in ('id', 'titulo', 'director', 'production', 'posthouse')})
+        out[sec] = items
+    return out
+
+
+def static_index(items, sec):
+    """Índice pre-renderizado: lo ven buscadores e IA sin ejecutar JS (el JS lo sustituye)."""
+    rows = []
+    for i, p in enumerate(items, 1):
+        t = html.escape(p['titulo'])
+        co = p['posthouse'] if sec == 'post' and p['posthouse'] else p['production']
+        rows.append(f'<li><a class="row" href="?p={p["id"]}" data-id="{p["id"]}"><span class="n">{i:03d}</span>'
+                    f'<span class="t">{t}</span><span class="d">{html.escape(p["director"] or "—")}</span>'
+                    f'<span class="c">{html.escape(co or "—")}</span><span class="len"></span></a></li>')
+    return '\n'.join(rows)
+
+
+def jsonld(key, page, items):
     url = SITE + page['path']
     person = {"@type": "Person", "name": "Miqui Cussó", "url": SITE + '/',
               "jobTitle": "Film Editor & Postproducer",
@@ -120,24 +85,23 @@ def jsonld(key, page):
         name = 'Post-production' if key == 'post' else 'Contact'
         blocks = [{"@context": "https://schema.org",
                    "@type": "ContactPage" if key == 'contact' else "CollectionPage",
-                   "name": page['title'], "url": url, "inLanguage": "es",
-                   "about": person,
+                   "name": page['title'], "url": url, "inLanguage": "es", "about": person,
                    "breadcrumb": {"@type": "BreadcrumbList", "itemListElement": [
                        {"@type": "ListItem", "position": 1, "name": "Editing", "item": SITE + '/'},
                        {"@type": "ListItem", "position": 2, "name": name, "item": url}]}}]
+    if items:
+        blocks.append({"@context": "https://schema.org", "@type": "ItemList",
+                       "name": ('Editing' if key == 'editing' else 'Post-production') + ' — Miqui Cussó',
+                       "itemListElement": [{"@type": "ListItem", "position": i, "name": p['titulo'],
+                                            "url": f"{url}?p={p['id']}"} for i, p in enumerate(items, 1)]})
     return '\n'.join('  <script type="application/ld+json">\n  %s\n  </script>' %
                      json.dumps(b, ensure_ascii=False, separators=(',', ':')) for b in blocks)
 
 
-def head(key, page):
+def seo_head(key, page, items):
     url = SITE + page['path']
-    t, d = page['title'], page['desc']
-    return f'''<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{t}</title>
+    t, d = html.escape(page['title']), html.escape(page['desc'])
+    return f'''  <title>{t}</title>
   <meta name="description" content="{d}">
   <link rel="canonical" href="{url}">
   <meta property="og:type" content="profile">
@@ -147,110 +111,64 @@ def head(key, page):
   <meta property="og:image" content="{OG_IMAGE}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="MIQUI CUSSÓ — Film Editor & Postproducer">
+  <meta property="og:image:alt" content="MIQUI CUSSÓ — Film Editor &amp; Postproducer">
   <meta property="og:site_name" content="Miqui Cussó — Portfolio">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="{t}">
   <meta name="twitter:description" content="{d}">
   <meta name="twitter:image" content="{OG_IMAGE}">
-{jsonld(key, page)}
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✂</text></svg>">
-  {THEME_BOOT}
-  <link rel="stylesheet" href="/assets/site.css">
-</head>'''
-
-
-def nav(key):
-    def link(k, label, href, prefix):
-        cls = ' class="active" aria-current="page"' if k == key else ''
-        return f'<a id="{prefix}-{k}" href="{href}"{cls}>{label}</a>'
-    desk = '\n'.join(f'    <li>{link(k, l, h, "nav")}</li>' for k, l, h in NAV)
-    mob = '\n'.join(f'  {link(k, l, h, "mob")}' for k, l, h in NAV)
-    return f'''<div class="nav-outer" id="navOuter">
-<nav id="mainNav">
-  <a class="nav-brand" href="/">
-    <h1>Miqui Cussó <span class="nav-aka-desktop">AKA FURIOSA STUDIO</span></h1>
-    <p>Film editor &amp; postproducer</p>
-    <p class="nav-aka-mobile">AKA FURIOSA STUDIO</p>
-  </a>
-  <ul class="nav-links">
-    <li>{TOGGLE}</li>
-{desk}
-  </ul>
-  <div class="nav-right-mobile">
-    {TOGGLE}
-    <button class="nav-hamburger" id="hamburger" type="button" aria-label="Menu">
-      <span></span><span></span><span></span>
-    </button>
-  </div>
-</nav>
-</div>
-
-<!-- Mobile menu -->
-<div class="nav-mobile" id="navMobile">
-{mob}
-</div>'''
-
-
-def page_html(key, page):
-    main = CONTACT_SECTION if key == 'contact' else GRID_SECTION.format(key=key, path=page['path'])
-    return f'''{head(key, page)}
-<body data-page="{key}">
-
-{nav(key)}
-
-<main>
-{main}
-</main>
-
-{FOOTER}
-
-<script src="/assets/projects.js"></script>
-<script src="/assets/thumbs.js"></script>
-<script src="/assets/site.js"></script>
-</body>
-</html>
+{jsonld(key, page, items)}
 '''
 
 
-REDIRECT = f'''<!DOCTYPE html>
+def bust(text):
+    """/assets/x.js -> /assets/x.js?v=<hash del contenido>: GitHub Pages cachea los assets 10 min."""
+    def sub(m):
+        name = m.group(1)
+        h = hashlib.sha1((ROOT / 'assets' / name).read_bytes()).hexdigest()[:8]
+        return f'/assets/{name}?v={h}'
+    return re.sub(r'/assets/([\w.-]+\.(?:css|js))(?:\?v=\w+)?', sub, text)
+
+
+def redirect(title):
+    return f'''<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Editing — MIQUI CUSSÓ</title>
+  <title>{title}</title>
   <link rel="canonical" href="{SITE}/">
   <meta name="robots" content="noindex">
   <meta http-equiv="refresh" content="0; url=/">
   <script>location.replace('/' + location.search + location.hash);</script>
 </head>
-<body><a href="/">Editing</a></body>
+<body><a href="/">MIQUI CUSSÓ</a></body>
 </html>
 '''
 
+
+TEMPLATE = (ROOT / 'templates/the-cut.html').read_text()
+PROJECTS = load_projects()
+
 for key, page in PAGES.items():
-    out = ROOT / page['file']
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(page_html(key, page))
-(ROOT / 'editing').mkdir(exist_ok=True)
-(ROOT / 'editing/index.html').write_text(REDIRECT)
+    sec = 'post' if key == 'post' else 'editing'
+    items = PROJECTS[sec] if key != 'contact' else []
+    out = TEMPLATE.replace('<!--SEO-->\n', seo_head(key, page, items))
+    out = out.replace('{{PAGE}}', key)
+    out = out.replace('<ol class="index" id="index"></ol>',
+                      '<ol class="index" id="index">\n' + static_index(PROJECTS[sec], sec) + '\n  </ol>')
+    if key == 'post':  # el título de la sección arranca ya en Post
+        out = out.replace('<h2 id="workTitle">Editing<sup', '<h2 id="workTitle">Post<sup')
+    path = ROOT / page['file']
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(bust(out))
+
+for folder, title in (('editing', 'Editing — MIQUI CUSSÓ'), ('v2', 'MIQUI CUSSÓ')):
+    (ROOT / folder).mkdir(exist_ok=True)
+    (ROOT / folder / 'index.html').write_text(redirect(title))
 
 urls = ''.join(f'  <url><loc>{SITE}{p["path"]}</loc></url>\n' for p in PAGES.values())
 (ROOT / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n'
                                   '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
                                   + urls + '</urlset>\n')
-print('ok:', ', '.join(p['file'] for p in PAGES.values()), '+ editing/index.html + sitemap.xml')
-
-
-# Cache-busting: /assets/x.js -> /assets/x.js?v=<hash del contenido>.
-# GitHub Pages cachea los assets 10 min; así cada cambio se ve al momento.
-def bust(html):
-    def sub(m):
-        name = m.group(1)
-        h = hashlib.sha1((ROOT / 'assets' / name).read_bytes()).hexdigest()[:8]
-        return f'/assets/{name}?v={h}'
-    return re.sub(r'/assets/([\w.-]+\.(?:css|js))(?:\?v=\w+)?', sub, html)
-
-for rel in [p['file'] for p in PAGES.values()] + ['v2/index.html']:
-    out = ROOT / rel
-    if out.exists():
-        out.write_text(bust(out.read_text()))
+print('ok:', ', '.join(p['file'] for p in PAGES.values()), '+ editing/ y v2/ (redirecciones) + sitemap.xml')
+print('proyectos:', {k: len(v) for k, v in PROJECTS.items()})
