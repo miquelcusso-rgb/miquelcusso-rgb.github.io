@@ -15,7 +15,8 @@ import re
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SITE = 'https://miquelcusso-rgb.github.io'
-OG_IMAGE = SITE + '/og-image.jpg'
+# ?v=<hash>: WhatsApp/Facebook cachean la miniatura por URL; al cambiar la imagen cambia la URL
+OG_IMAGE = SITE + '/og-image.jpg?v=' + hashlib.sha1((ROOT / 'og-image.jpg').read_bytes()).hexdigest()[:8]
 SAME_AS = ["https://www.linkedin.com/in/miquelcusso/",
            "https://www.instagram.com/mikelkuss/",
            "https://vimeo.com/showcase/8984756"]
