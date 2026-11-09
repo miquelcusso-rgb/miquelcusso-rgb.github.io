@@ -204,6 +204,7 @@ def page_html(key, page):
 {FOOTER}
 
 <script src="/assets/projects.js"></script>
+<script src="/assets/thumbs.js"></script>
 <script src="/assets/site.js"></script>
 </body>
 </html>

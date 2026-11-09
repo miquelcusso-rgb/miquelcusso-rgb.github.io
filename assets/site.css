@@ -50,13 +50,29 @@ body, .nav-outer, .nav-mobile { transition: background-color 0.25s, color 0.25s;
   transition: color 0.2s;
 }
 .theme-toggle:hover { color: var(--fg-bright); }
-.theme-toggle { gap: 6px; letter-spacing: 0.1em; }
+/* Toggle B W: botón con forma de píldora; la letra activa va rellena */
+.theme-toggle {
+  gap: 2px;
+  padding: 3px;
+  letter-spacing: 0.08em;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  transition: border-color 0.2s;
+}
+.theme-toggle:hover { border-color: var(--fg-dim); }
 .theme-toggle .tt-b,
-.theme-toggle .tt-w { transition: color 0.2s, opacity 0.2s; opacity: 0.45; }
-.theme-toggle .tt-b { color: var(--fg-bright); opacity: 1; }
-:root[data-theme="light"] .theme-toggle .tt-b { color: inherit; opacity: 0.45; }
-:root[data-theme="light"] .theme-toggle .tt-w { color: var(--fg-bright); opacity: 1; }
-.theme-toggle:hover .tt-b, .theme-toggle:hover .tt-w { opacity: 1; }
+.theme-toggle .tt-w {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 22px;
+  border-radius: 999px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0;
+  color: var(--fg-dim);
+  transition: background-color 0.2s, color 0.2s;
+}
+.theme-toggle .tt-b { background: var(--fg-bright); color: var(--bg); }
+:root[data-theme="light"] .theme-toggle .tt-b { background: transparent; color: var(--fg-dim); }
+:root[data-theme="light"] .theme-toggle .tt-w { background: var(--fg-bright); color: var(--bg); }
+.card img:not([src]) { visibility: hidden; }
 .nav-right-mobile { display: none; align-items: center; gap: 18px; }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }

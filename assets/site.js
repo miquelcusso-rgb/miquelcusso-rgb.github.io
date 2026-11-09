@@ -29,11 +29,38 @@ document.querySelectorAll('.theme-toggle').forEach(b => b.addEventListener('clic
 syncThemeButtons();
 
 // ─────────────────────────────────────────────────────────────────
-// Thumbnail via vumbnail.com — sin CORS, funciona en local
+// Miniaturas: 1) `thumbnail` manual del proyecto, 2) la oficial de Vimeo
+// guardada en assets/thumbs.js (scripts/build-thumbs.py), 3) si falta
+// (vídeo recién subido), se pide a Vimeo en vivo y se sustituye al llegar.
 // ─────────────────────────────────────────────────────────────────
+const THUMBS = window.THUMBS || {};
+const LIVE_THUMBS = {};
 function thumbUrl(p) {
-  if (p.thumbnail) return p.thumbnail;
-  return p.vimeo_id ? `https://vumbnail.com/${p.vimeo_id}.jpg` : '';
+  return p.thumbnail || THUMBS[p.vimeo_id] || LIVE_THUMBS[p.vimeo_id] || '';
+}
+const pendingThumbs = {};
+function fetchLiveThumb(p) {
+  const id = p.vimeo_id;
+  if (!id || p.thumbnail || THUMBS[id] || LIVE_THUMBS[id]) return Promise.resolve();
+  if (!pendingThumbs[id]) {
+    const page = `https://vimeo.com/${id}` + (p.vimeo_hash ? '/' + p.vimeo_hash : '');
+    pendingThumbs[id] = fetch('https://vimeo.com/api/oembed.json?width=1280&url=' + encodeURIComponent(page))
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const t = d && d.thumbnail_url;
+        if (t && !/\/default-/.test(t)) {
+          LIVE_THUMBS[id] = t;
+          document.querySelectorAll(`img[data-vid="${id}"]`).forEach(img => { img.src = t; });
+        }
+      })
+      .catch(() => {});
+  }
+  return pendingThumbs[id];
+}
+function thumbImg(p) {
+  const src = thumbUrl(p);
+  if (!src) fetchLiveThumb(p);
+  return `<img ${src ? `src="${src}"` : ''} data-vid="${p.vimeo_id}" alt="${p.titulo}" loading="lazy" width="640" height="360">`;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -55,7 +82,7 @@ function makeCard(p, extraClass) {
   card.className = 'card' + (extraClass ? ' ' + extraClass : '');
   card.href = projectHref(p.id);
   card.innerHTML = `
-    <img src="${thumbUrl(p)}" alt="${p.titulo}" loading="lazy">
+    ${thumbImg(p)}
     <div class="card-overlay">
       <div class="card-title">${p.titulo}</div>
     </div>

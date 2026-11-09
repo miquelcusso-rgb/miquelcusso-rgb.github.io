@@ -57,11 +57,12 @@
     .hud nav { display: flex; gap: clamp(14px, 2.4vw, 32px); align-items: center; }
     .hud nav a, .hud nav button { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; opacity: .75; transition: opacity .2s; }
     .hud nav a:hover, .hud nav button:hover { opacity: 1; }
-    .bw { display: inline-flex; gap: 5px; }
-    .bw span { opacity: .4; transition: opacity .2s; }
-    .bw .b { opacity: 1; }
-    :root[data-theme="light"] .bw .b { opacity: .4; }
-    :root[data-theme="light"] .bw .w { opacity: 1; }
+    .bw { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid rgba(255,255,255,.55); border-radius: 999px; }
+    .hud nav .bw { opacity: 1; }
+    .bw span { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 22px; border-radius: 999px; font-weight: 500; letter-spacing: 0; transition: background .2s, color .2s; color: rgba(255,255,255,.6); }
+    .bw .b { background: #fff; color: #000; }
+    :root[data-theme="light"] .bw .b { background: transparent; color: rgba(255,255,255,.6); }
+    :root[data-theme="light"] .bw .w { background: #fff; color: #000; }
 
     /* ── HERO ── */
     .hero { position: relative; height: 100svh; min-height: 520px; overflow: hidden; background: #000; color: #fff; }
@@ -343,6 +344,7 @@
 </div>
 
 <script src="/assets/projects.js"></script>
+<script src="/assets/thumbs.js"></script>
 <script src="https://player.vimeo.com/api/player.js" async id="vimeoSdk"></script>
 <script>
 (() => {
@@ -359,7 +361,7 @@
   let cache = {};
   try { cache = JSON.parse(sessionStorage.getItem('vmeta') || '{}'); } catch (e) {}
   const vimeoUrl = p => `https://vimeo.com/${p.vimeo_id}${p.vimeo_hash ? '/' + p.vimeo_hash : ''}`;
-  const thumb = p => (meta[p.vimeo_id] && meta[p.vimeo_id].thumb) || p.thumbnail || `https://vumbnail.com/${p.vimeo_id}.jpg`;
+  const thumb = p => p.thumbnail || (window.THUMBS || {})[p.vimeo_id] || (meta[p.vimeo_id] && meta[p.vimeo_id].thumb) || `https://vumbnail.com/${p.vimeo_id}.jpg`;
   const isPlaceholder = p => /\/default-/.test(thumb(p));
   const dur = p => {
     const s = meta[p.vimeo_id] && meta[p.vimeo_id].duration;
