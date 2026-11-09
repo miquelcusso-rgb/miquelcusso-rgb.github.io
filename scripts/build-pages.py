@@ -8,6 +8,7 @@ editing/index.html (redirección a /). Edita cabecera, footer o metadatos
 AQUÍ y vuelve a ejecutar; no edites los .html generados a mano.
 Los proyectos (vídeos) viven en assets/projects.js.
 """
+import hashlib
 import json
 import pathlib
 import re
@@ -237,3 +238,18 @@ urls = ''.join(f'  <url><loc>{SITE}{p["path"]}</loc></url>\n' for p in PAGES.val
                                   '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
                                   + urls + '</urlset>\n')
 print('ok:', ', '.join(p['file'] for p in PAGES.values()), '+ editing/index.html + sitemap.xml')
+
+
+# Cache-busting: /assets/x.js -> /assets/x.js?v=<hash del contenido>.
+# GitHub Pages cachea los assets 10 min; así cada cambio se ve al momento.
+def bust(html):
+    def sub(m):
+        name = m.group(1)
+        h = hashlib.sha1((ROOT / 'assets' / name).read_bytes()).hexdigest()[:8]
+        return f'/assets/{name}?v={h}'
+    return re.sub(r'/assets/([\w.-]+\.(?:css|js))(?:\?v=\w+)?', sub, html)
+
+for rel in [p['file'] for p in PAGES.values()] + ['v2/index.html']:
+    out = ROOT / rel
+    if out.exists():
+        out.write_text(bust(out.read_text()))
