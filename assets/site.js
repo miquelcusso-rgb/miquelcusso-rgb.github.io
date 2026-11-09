@@ -44,7 +44,7 @@ function fetchLiveThumb(p) {
   if (!id || p.thumbnail || THUMBS[id] || LIVE_THUMBS[id]) return Promise.resolve();
   if (!pendingThumbs[id]) {
     const page = `https://vimeo.com/${id}` + (p.vimeo_hash ? '/' + p.vimeo_hash : '');
-    pendingThumbs[id] = fetch('https://vimeo.com/api/oembed.json?width=1280&url=' + encodeURIComponent(page))
+    pendingThumbs[id] = fetch('https://vimeo.com/api/oembed.json?width=960&url=' + encodeURIComponent(page))
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         const t = d && d.thumbnail_url;
@@ -57,10 +57,10 @@ function fetchLiveThumb(p) {
   }
   return pendingThumbs[id];
 }
-function thumbImg(p) {
+function thumbImg(p, eager) {
   const src = thumbUrl(p);
   if (!src) fetchLiveThumb(p);
-  return `<img ${src ? `src="${src}"` : ''} data-vid="${p.vimeo_id}" alt="${p.titulo}" loading="lazy" width="640" height="360">`;
+  return `<img ${src ? `src="${src}"` : ''} data-vid="${p.vimeo_id}" alt="${p.titulo}" loading="${eager ? 'eager' : 'lazy'}" width="640" height="360">`;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -77,12 +77,12 @@ function projectHref(id) {
   return location.pathname + '?p=' + encodeURIComponent(id);
 }
 
-function makeCard(p, extraClass) {
+function makeCard(p, extraClass, eager) {
   const card = document.createElement('a');
   card.className = 'card' + (extraClass ? ' ' + extraClass : '');
   card.href = projectHref(p.id);
   card.innerHTML = `
-    ${thumbImg(p)}
+    ${thumbImg(p, eager)}
     <div class="card-overlay">
       <div class="card-title">${p.titulo}</div>
     </div>
@@ -102,7 +102,7 @@ function renderGrid() {
   const container = document.getElementById('grid-' + PAGE);
   if (!container) return;
   container.innerHTML = '';
-  PROJECTS[PAGE].forEach(p => container.appendChild(makeCard(p)));
+  PROJECTS[PAGE].forEach((p, i) => container.appendChild(makeCard(p, "", i < 6)));
 }
 
 // ─────────────────────────────────────────────────────────────────

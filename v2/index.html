@@ -344,7 +344,7 @@
 </div>
 
 <script src="/assets/projects.js?v=fb25383c"></script>
-<script src="/assets/thumbs.js?v=7ece2269"></script>
+<script src="/assets/thumbs.js?v=f11f9f7f"></script>
 <script src="https://player.vimeo.com/api/player.js" async id="vimeoSdk"></script>
 <script>
 (() => {
@@ -362,6 +362,8 @@
   try { cache = JSON.parse(sessionStorage.getItem('vmeta') || '{}'); } catch (e) {}
   const vimeoUrl = p => `https://vimeo.com/${p.vimeo_id}${p.vimeo_hash ? '/' + p.vimeo_hash : ''}`;
   const thumb = p => p.thumbnail || (window.THUMBS || {})[p.vimeo_id] || (meta[p.vimeo_id] && meta[p.vimeo_id].thumb) || `https://vumbnail.com/${p.vimeo_id}.jpg`;
+  // Versión grande para la portada a pantalla completa
+  const big = p => thumb(p).replace(/-d_\d+(x\d+)?/, "-d_1920");
   const isPlaceholder = p => /\/default-/.test(thumb(p));
   const dur = p => {
     const s = meta[p.vimeo_id] && meta[p.vimeo_id].duration;
@@ -415,7 +417,7 @@
     if (!reel.length) return;
     shot = (shot + 1) % reel.length;
     const p = reel[shot];
-    back.style.backgroundImage = `url("${thumb(p)}")`;
+    back.style.backgroundImage = `url("${big(p)}")`;
     back.classList.remove('on'); void back.offsetWidth; back.classList.add('on');
     front.classList.remove('on');
     [front, back] = [back, front];
@@ -431,7 +433,7 @@
     reel = (feat.length ? feat : all).filter(p => !isPlaceholder(p));
     if (!reel.length) reel = all.slice(0, 8);
     $('shotT').textContent = String(reel.length).padStart(2, '0');
-    reel.forEach(p => { const i = new Image(); i.src = thumb(p); });
+    reel.forEach(p => { const i = new Image(); i.src = big(p); });
     cut();
     if (!reduced) heroTimer = setInterval(cut, 4200);
   }

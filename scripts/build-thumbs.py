@@ -24,7 +24,7 @@ for m in re.finditer(r"vimeo_id:\s*'(\d+)'(?:,\s*vimeo_hash:\s*'(\w+)')?", src):
 thumbs, missing = {}, []
 for vid, h in videos.items():
     page = f'https://vimeo.com/{vid}' + (f'/{h}' if h else '')
-    url = 'https://vimeo.com/api/oembed.json?width=1280&url=' + urllib.parse.quote(page, safe='')
+    url = 'https://vimeo.com/api/oembed.json?width=960&url=' + urllib.parse.quote(page, safe='')
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'portfolio-thumbs/1.0'})
         with urllib.request.urlopen(req, timeout=20) as r:
