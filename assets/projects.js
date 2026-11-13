@@ -198,5 +198,3 @@ window.PROJECTS = {
   ]
 };
 
-// Destacados para la portada de /v2/ (ids de arriba)
-window.FEATURED = ['e20', 'p01', 'e21', 'p02', 'e22', 'p06', 'e01', 'p14'];

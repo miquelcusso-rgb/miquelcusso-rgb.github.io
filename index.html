@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#070707" id="themeColor">
   <title>MIQUI CUSSÓ — Film Editor &amp; Postproducer</title>
   <meta name="description" content="Portfolio de Miqui Cussó, montador de cine y postproductor. Edición, postproducción y acabado de spots y piezas de marca para OYSHO, EA Sports, Audi y más.">
   <link rel="canonical" href="https://miquelcusso-rgb.github.io/">
@@ -53,7 +54,7 @@
       color-scheme: light;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { -webkit-text-size-adjust: 100%; }
+    html { -webkit-text-size-adjust: 100%; background: var(--bg); }
     body {
       background: var(--bg); color: var(--fg);
       font-family: var(--sans); font-size: 15px; line-height: 1.45;
@@ -87,7 +88,7 @@
     /* ── HERO ── */
     .hero { position: relative; height: 100svh; min-height: 520px; overflow: hidden; background: #000; color: #fff; }
     .shot {
-      position: absolute; inset: 0;
+      position: absolute; inset: -2px;
       background: #000 center / cover no-repeat;
       opacity: 0;
     }
@@ -396,8 +397,8 @@
   <div class="strip" id="strip"></div>
 </div>
 
-<script src="/assets/projects.js?v=68b7254b"></script>
-<script src="/assets/thumbs.js?v=f11f9f7f"></script>
+<script src="/assets/projects.js?v=9838195a"></script>
+<script src="/assets/thumbs.js?v=4d26ec79"></script>
 <script src="https://player.vimeo.com/api/player.js" async id="vimeoSdk"></script>
 <script>
 (() => {
@@ -472,10 +473,26 @@
     $('nowCred').textContent = p.director && p.director !== '—' ? 'dir. ' + p.director : '';
     const sc = $('scrub'); sc.classList.remove('run'); void sc.offsetWidth; sc.classList.add('run');
   }
+  // Portada: 8 planos al azar en cada visita, elegidos de la mitad superior de
+  // Editing y de Post (lo más reciente) y nunca de hace más de 5 años
+  // (fecha de subida a Vimeo, en assets/thumbs.js → VDATES).
+  let heroPool = null;
+  function pickReel() {
+    if (heroPool) return heroPool;
+    const dates = window.VDATES || {};
+    const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 5);
+    const recent = p => !dates[p.vimeo_id] || new Date(dates[p.vimeo_id]) >= cutoff;
+    const top = s => P[s].slice(0, Math.ceil(P[s].length / 2)).map(p => ({ ...p, set: s }));
+    const seen = new Set();
+    const pool = [...top('editing'), ...top('post')]
+      .filter(p => recent(p) && !isPlaceholder(p) && !seen.has(p.vimeo_id) && seen.add(p.vimeo_id));
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    heroPool = pool.slice(0, 8);
+    return heroPool;
+  }
   function startHero() {
     clearInterval(heroTimer); shot = -1;
-    const feat = (window.FEATURED || []).map(id => byId[id]).filter(Boolean);
-    reel = (feat.length ? feat : all).filter(p => !isPlaceholder(p));
+    reel = pickReel();
     if (!reel.length) reel = all.slice(0, 8);
     $('shotT').textContent = String(reel.length).padStart(2, '0');
     reel.forEach(p => { const i = new Image(); i.src = big(p); });
@@ -642,7 +659,7 @@
   addEventListener('popstate', route);
 
   // ── Tema B W ──
-  function syncBw() { const l = document.documentElement.dataset.theme === 'light'; $('bw').setAttribute('aria-label', l ? 'Switch to black' : 'Switch to white'); }
+  function syncBw() { const l = document.documentElement.dataset.theme === 'light'; $('themeColor').setAttribute('content', l ? '#f1f0ec' : '#070707'); $('bw').setAttribute('aria-label', l ? 'Switch to black' : 'Switch to white'); }
   $('bw').addEventListener('click', () => {
     const l = document.documentElement.dataset.theme !== 'light';
     document.documentElement.dataset.theme = l ? 'light' : 'dark';

@@ -21,7 +21,7 @@ videos = {}
 for m in re.finditer(r"vimeo_id:\s*'(\d+)'(?:,\s*vimeo_hash:\s*'(\w+)')?", src):
     videos[m.group(1)] = m.group(2)
 
-thumbs, missing = {}, []
+thumbs, dates, missing = {}, {}, []
 for vid, h in videos.items():
     page = f'https://vimeo.com/{vid}' + (f'/{h}' if h else '')
     url = 'https://vimeo.com/api/oembed.json?width=960&url=' + urllib.parse.quote(page, safe='')
@@ -29,6 +29,8 @@ for vid, h in videos.items():
         req = urllib.request.Request(url, headers={'User-Agent': 'portfolio-thumbs/1.0'})
         with urllib.request.urlopen(req, timeout=20) as r:
             d = json.load(r)
+        if d.get('upload_date'):
+            dates[vid] = d['upload_date'][:10]  # fecha de subida a Vimeo (la portada descarta lo de más de 5 años)
         t = d.get('thumbnail_url') or ''
         if t and '/default-' not in t:
             thumbs[vid] = t
@@ -39,7 +41,8 @@ for vid, h in videos.items():
 
 (ROOT / 'assets/thumbs.js').write_text(
     '// Generado por scripts/build-thumbs.py — no editar a mano.\n'
-    'window.THUMBS = ' + json.dumps(thumbs, indent=2, sort_keys=True) + ';\n')
+    'window.THUMBS = ' + json.dumps(thumbs, indent=2, sort_keys=True) + ';\n'
+    'window.VDATES = ' + json.dumps(dates, indent=2, sort_keys=True) + ';\n')
 print(f'{len(thumbs)}/{len(videos)} miniaturas guardadas')
 if missing:
     print('Sin miniatura todavía:', ', '.join(missing))
