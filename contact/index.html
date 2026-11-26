@@ -227,19 +227,20 @@
     .strip button.cur::after { content: ''; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: var(--rec); }
 
     /* ── CONTACT ── */
-    .contact { padding: clamp(80px, 14vw, 200px) var(--pad) 60px; border-top: 1px solid var(--line); }
-    .contact h2 { font-weight: 800; font-size: clamp(48px, 10.5vw, 190px); letter-spacing: -.06em; line-height: .82; }
-    .contact h2 .out { -webkit-text-stroke: 3px var(--fg); paint-order: stroke fill; color: var(--bg); }
-    .contact-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 48px; align-items: center; }
-    .pill { display: inline-flex; align-items: center; gap: 10px; padding: 16px 26px; border: 1px solid var(--fg); border-radius: 999px; font-weight: 500; font-size: 16px; transition: background .2s, color .2s; }
-    .pill:hover, .pill.solid { background: var(--fg); color: var(--bg); }
+    .contact { padding: clamp(64px, 10vw, 140px) var(--pad) 56px; border-top: 1px solid var(--line); }
+    .contact h2 { font-weight: 800; font-size: clamp(40px, 6.4vw, 112px); letter-spacing: -.055em; line-height: .95; }
+    .contact h2 .out { -webkit-text-stroke: 2px var(--fg); paint-order: stroke fill; color: var(--bg); }
+    .contact-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 36px; align-items: center; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px; font-weight: 500; font-size: 14px; letter-spacing: -.005em; transition: background .2s, color .2s, border-color .2s; }
+    .pill:hover { border-color: var(--fg); }
+    .pill.solid { background: var(--fg); color: var(--bg); border-color: var(--fg); }
     .pill.solid:hover { background: transparent; color: var(--fg); }
-    .pill.social svg { display: none; width: 20px; height: 20px; fill: currentColor; }
+    .pill.social svg { display: none; width: 16px; height: 16px; fill: currentColor; }
     @media (max-width: 760px) {
       /* Móvil: Write me + 3 logos en una sola línea */
       .contact-row { flex-wrap: nowrap; gap: 10px; }
-      .pill.solid { flex: 1 1 auto; justify-content: center; padding: 15px 18px; white-space: nowrap; }
-      .pill.social { flex: 0 0 auto; width: 52px; height: 52px; padding: 0; justify-content: center; }
+      .pill.solid { flex: 1 1 auto; justify-content: center; height: 44px; padding: 0 18px; white-space: nowrap; }
+      .pill.social { flex: 0 0 auto; width: 44px; height: 44px; padding: 0; justify-content: center; }
       .pill.social span { display: none; }
       .pill.social svg { display: block; }
     }
