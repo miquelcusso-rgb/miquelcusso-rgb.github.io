@@ -387,7 +387,7 @@
   <div class="strip" id="strip"></div>
 </div>
 
-<script src="/assets/projects.js?v=9838195a"></script>
+<script src="/assets/projects.js?v=d5d3bb48"></script>
 <script src="/assets/thumbs.js?v=4d26ec79"></script>
 <script src="https://player.vimeo.com/api/player.js" async id="vimeoSdk"></script>
 <script>
@@ -493,7 +493,7 @@
 
   // ── Ticker de marcas ──
   function buildTicker() {
-    const brands = [...new Set(all.map(p => p.titulo.split(' — ')[0].trim()))];
+    const brands = window.BRANDS || [...new Set(all.map(p => p.titulo.split(' — ')[0].trim()))];
     const html = brands.map(b => `<span>${b}</span>`).join('');
     $('ticker').innerHTML = html + html;
   }

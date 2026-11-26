@@ -198,3 +198,38 @@ window.PROJECTS = {
   ]
 };
 
+// Cinta de marcas de la web (en este orden). Se edita a mano: añade o quita nombres aquí.
+window.BRANDS = [
+  'OYSHO',
+  'GAMRFIRST',
+  'eBay',
+  'Changan',
+  'Bicentury',
+  'The Fork',
+  'DoorDash',
+  '400 Conejos',
+  'Idealista',
+  'Powerade',
+  'Amazon',
+  'The Boys',
+  'Volkswagen',
+  'Samsung',
+  'Glovo',
+  'Kaufland',
+  'Bizum',
+  'Pfister',
+  'Wallapop',
+  'HEAD',
+  'El Corte Inglés',
+  'EA Sports',
+  'Audi',
+  'Terra Cene',
+  'Canon',
+  'Nike',
+  'Dua Lipa',
+  'Línea Directa',
+  'Ferran Palau',
+  'Eclipse',
+  'La Mer',
+  'LOEWE',
+];

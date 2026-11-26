@@ -456,7 +456,7 @@
 
   // ── Ticker de marcas ──
   function buildTicker() {
-    const brands = [...new Set(all.map(p => p.titulo.split(' — ')[0].trim()))];
+    const brands = window.BRANDS || [...new Set(all.map(p => p.titulo.split(' — ')[0].trim()))];
     const html = brands.map(b => `<span>${b}</span>`).join('');
     $('ticker').innerHTML = html + html;
   }
